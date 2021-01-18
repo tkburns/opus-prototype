@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "outDir": "./build/",
+    "incremental": true,
+    "declaration": true,
+    "sourceMap": true,
+
+    "target": "es6",
+    "module": "commonjs",
+
+    "isolatedModules": true,
+    "esModuleInterop": true,
+
+    "strict": true,
+    "noImplicitReturns": true,
+    "forceConsistentCasingInFileNames": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "&/*": ["src/*"]
+    }
+  },
+  "include": [
+    "src"
+  ]
+}

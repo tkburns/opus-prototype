@@ -13,5 +13,9 @@
     "algebraic-effects"
   ],
   "author": "Tate Burns",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^14.14.21",
+    "typescript": "^4.1.3"
+  }
 }
