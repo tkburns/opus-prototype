@@ -4,8 +4,8 @@
   "description": "prototype compiler for the opus programming language",
   "main": "./build/index.js",
   "scripts": {
-    "build": "tsc",
-    "build:watch": "tsc -w",
+    "build": "tsc -p tsconfig.build.json",
+    "build:watch": "tsc -p tsconfig.build.json -w",
     "clean": "rm -rf build/*",
     "start:pure": "node ./build/index.js",
     "start": "npm run build && npm run start:pure",
