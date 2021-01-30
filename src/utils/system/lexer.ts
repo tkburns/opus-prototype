@@ -8,6 +8,11 @@ export type LexerRulesBase = {
   [key: string]: Pattern | [Pattern, Mapper];
 };
 
+export type LexerModule<T extends LexerRulesBase> =
+  Module<string, Iterator<LexerToken<T>, undefined>>;
+
+
+
 type TokenValue<R extends LexerRulesBase[string]> = 
   R extends [Pattern, Mapper]
     ? ReturnType<R[1]>
@@ -20,15 +25,16 @@ export type LexerToken<Rules extends LexerRulesBase> = {
   };
 }[keyof Rules];
 
-type LexerModule<T extends LexerRulesBase> =
-  Module<string, Iterator<LexerToken<T>, undefined>>;
+
+
+type Rule = {
+  type: string;
+  pattern: Pattern;
+  mapper?: Mapper;
+};
 
 type RuleMatch = {
-  rule: {
-    type: string;
-    pattern: Pattern;
-    mapper: Mapper;
-  };
+  rule: Rule;
   match: string;
 };
 
@@ -36,56 +42,23 @@ type RuleMatch = {
 export const createLexer = <Rules extends LexerRulesBase>(rules: Rules):
   LexerModule<Rules> =>
 {
-  const ruleList = Object.entries(rules)
-    .map(([t, patternMapper]) => {
-      const [pattern, mapper] = Array.isArray(patternMapper)
-        ? patternMapper
-        : [patternMapper, () => undefined];
-      return { type: t, pattern, mapper }
-    });
+  const ruleList = processRules(rules);
 
   return {
     run: (input) => {
-      const source = input;
-      let start = 0;
+      let unprocessed = input;
 
       return {
         next: () => {
-          const unprocessed = source.slice(start);
           if (unprocessed === '') {
             return { value: undefined, done: true };
           }
 
-          const matches = ruleList
-            .map(rule => ({ rule, match: checkMatch(unprocessed, rule.pattern) }))
-            .filter((result): result is RuleMatch => result.match != null);
-
-          const bestMatch = matches.reduce(
-            (best, match) => {
-              if (best == null) {
-                return match;
-              } else {
-                return match.match.length > best.match.length
-                  ? match
-                  : best;
-              }
-            },
-            undefined as RuleMatch | undefined
-          );
-
-          if (bestMatch == null) {
-            const unprocessedSlice = unprocessed.length > 15
-              ? `${unprocessed.slice(0, 15)}...`
-              : unprocessed.slice(0, 15);
-            throw new Error(`unable to find a token for '${unprocessedSlice}'`);
-          }
-
-          start = start + bestMatch.match.length;
-
-          const tokenValue = bestMatch.rule.mapper(bestMatch.match);
+          const [token, nextUnprocessed] = extractToken(unprocessed, ruleList);
+          unprocessed = nextUnprocessed;
 
           return {
-            value: { type: bestMatch.rule.type, value: tokenValue } as LexerToken<Rules>,
+            value: token as LexerToken<Rules>,
             done: false
           };
         }
@@ -93,6 +66,16 @@ export const createLexer = <Rules extends LexerRulesBase>(rules: Rules):
     }
   };
 };
+
+
+const processRules = (rules: LexerRulesBase): Rule[] =>
+  Object.entries(rules)
+    .map(([t, patternMapper]) => {
+      const [pattern, mapper] = Array.isArray(patternMapper)
+        ? patternMapper
+        : [patternMapper, undefined];
+      return { type: t, pattern, mapper } as Rule
+    });
 
 const checkMatch = (input: string, pattern: Pattern) => {
   if (typeof pattern === 'string') {
@@ -105,4 +88,38 @@ const checkMatch = (input: string, pattern: Pattern) => {
       ? match[0]
       : undefined;
   }
+};
+
+const extractToken = (input: string, rules: Rule[]) => {
+  const matches = rules
+    .map(rule => ({ rule, match: checkMatch(input, rule.pattern) }))
+    .filter((result): result is RuleMatch => result.match != null);
+
+  const bestMatch = matches.reduce(
+    (best, match) => {
+      if (best == null) {
+        return match;
+      } else {
+        return match.match.length > best.match.length
+          ? match
+          : best;
+      }
+    },
+    undefined as RuleMatch | undefined
+  );
+
+  if (bestMatch == null) {
+    const unprocessedSlice = input.length > 15
+      ? `${input.slice(0, 15)}...`
+      : input.slice(0, 15);
+    throw new Error(`unable to find a token for '${unprocessedSlice}'`);
+  }
+
+  const unprocessed = input.slice(bestMatch.match.length);
+
+  const token = bestMatch.rule.mapper
+    ? { type: bestMatch.rule.type, value: bestMatch.rule.mapper(bestMatch.match) }
+    : { type: bestMatch.rule.type }
+
+  return [token, unprocessed] as const;
 };

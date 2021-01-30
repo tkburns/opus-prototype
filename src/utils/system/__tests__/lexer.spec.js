@@ -14,11 +14,11 @@ it('extracts tokens from input', () => {
   const result = runIterator(iterator);
 
   expect(result).toEqual([
-    { type: '(', value: undefined },
+    { type: '(' },
     { type: 'word', value: 'hello' },
-    { type: 'space', value: undefined },
+    { type: 'space' },
     { type: 'word', value: 'there' },
-    { type: ')', value: undefined },
+    { type: ')' },
   ])
 });
 
@@ -33,8 +33,8 @@ it('selects the longest match', () => {
   const result = runIterator(iterator);
 
   expect(result).toEqual([
-    { type: 'let', value: undefined },
-    { type: 'space', value: undefined },
+    { type: 'let' },
+    { type: 'space' },
     { type: 'word', value: 'letter' },
   ])
 });
