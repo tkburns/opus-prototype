@@ -8,7 +8,7 @@ export type LexerRulesBase = {
   [key: string]: Pattern | [Pattern, Mapper];
 };
 
-export type LexerModule<T extends LexerRulesBase> =
+export type LexerModule<T extends LexerRulesBase = LexerRulesBase> =
   Module<string, Iterator<LexerToken<T>, undefined>>;
 
 
@@ -25,6 +25,10 @@ export type LexerToken<Rules extends LexerRulesBase> = {
   };
 }[keyof Rules];
 
+export type LexerModuleToken<M extends LexerModule> =
+  M extends LexerModule<infer Rs>
+    ? LexerToken<Rs>
+    : never;
 
 
 type Rule = {
