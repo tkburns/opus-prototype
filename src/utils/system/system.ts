@@ -1,5 +1,5 @@
-import type { Prepend, Last } from '../tuple';
-import type { UFn } from '../types';
+import type { Prepend, Last } from '../tuple.types';
+import type { UFn } from '../helper.types';
 
 
 export interface Module<A, B> {
