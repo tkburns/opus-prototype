@@ -4,6 +4,7 @@ import minimist from 'minimist';
 import fs from 'fs';
 import path from 'path';
 import { core } from './core';
+import { stringifyToken } from './utils/system/lexer';
 
 const version = '0.0.0-development';
 const help =
@@ -45,6 +46,6 @@ if (flags.help || flags._.length !== 1) {
   const result = core.run(fileStr);
 
   result.forEach(token => {
-    process.stdout.write(JSON.stringify(token) + '\n');
+    process.stdout.write(stringifyToken(token) + '\n');
   });
 }

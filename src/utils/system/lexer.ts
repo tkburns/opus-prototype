@@ -31,6 +31,10 @@ export type LexerModuleToken<M extends LexerModule> =
     : never;
 
 
+type TokenBase = {
+  type: string;
+  value?: unknown;
+};
 
 type Rule = {
   type: string;
@@ -127,4 +131,13 @@ const extractToken = (input: string, rules: Rule[]) => {
     : { type: bestMatch.rule.type }
 
   return [token, unprocessed] as const;
+};
+
+
+export const stringifyToken = (token: TokenBase) => {
+  if ('value' in token) {
+    return `${token.type}(${token.value})`;
+  } else {
+    return token.type;
+  }
 };
