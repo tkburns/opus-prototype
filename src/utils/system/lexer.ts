@@ -31,6 +31,7 @@ export type LexerModuleToken<M extends LexerModule> =
     : never;
 
 
+
 type Rule = {
   type: string;
   pattern: Pattern;
