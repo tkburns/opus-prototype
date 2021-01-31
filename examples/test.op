@@ -1,0 +1,2 @@
+foo = 12
+bar = x => (x, foo)
