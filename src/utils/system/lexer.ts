@@ -12,6 +12,10 @@ export type LexerModule<T extends LexerRulesBase = LexerRulesBase> =
   Module<string, Iterator<LexerToken<T>, undefined>>;
 
 
+export type TokenBase = {
+  type: string;
+  value?: unknown;
+};
 
 type TokenValue<R extends LexerRulesBase[string]> = 
   R extends [Pattern, Mapper]
@@ -31,10 +35,6 @@ export type LexerModuleToken<M extends LexerModule> =
     : never;
 
 
-type TokenBase = {
-  type: string;
-  value?: unknown;
-};
 
 type Rule = {
   type: string;
