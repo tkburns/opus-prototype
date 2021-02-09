@@ -1,4 +1,5 @@
 import { createLexer, LexerModuleToken } from "&/utils/system/lexer";
+import { createTokenFilter, FilterModuleToken } from "&/utils/system/token-filter";
 
 export const lexer = createLexer({
   '(': '(',
@@ -17,5 +18,8 @@ export const lexer = createLexer({
   space: /\s+/,
 });
 
-
 export type Token = LexerModuleToken<typeof lexer>;
+
+export const tokenFilter = createTokenFilter(['space']).reify<Token>();
+
+export type FilteredToken = FilterModuleToken<typeof tokenFilter>;
