@@ -19,13 +19,21 @@ export type FilterModuleToken<M extends _FilterModule> =
     : never;
 
 
+type UnreifiedTokenFilterModule<Ignored extends string> = {
+  run: <Token extends TokenBase>(it: Iterator<Token, undefined>) => Iterator<RemoveTypes<Token, Ignored>, undefined>;
+}
+
+type GenericTokenFilterModule<Ignored extends string> = UnreifiedTokenFilterModule<Ignored> & {
+  reify: <Token extends TokenBase>() => Module<Iterator<Token, undefined>, Iterator<RemoveTypes<Token, Ignored>, undefined>>;
+}
+
 export type TokenFilterModule<Token extends TokenBase, Ignored extends string> =
   Module<Iterator<Token, undefined>, Iterator<RemoveTypes<Token, Ignored>, undefined>>;
 
 
-export const createTokenFilter = <Ignored extends string>(ignoredTokens: Ignored[]) => {
-  const unreified = {
-    run: <Token extends TokenBase>(iterator: Iterator<Token, undefined>): Iterator<RemoveTypes<Token, Ignored>, undefined> => {
+export const createTokenFilter = <Ignored extends string>(ignoredTokens: Ignored[]): GenericTokenFilterModule<Ignored> => {
+  const unreified: UnreifiedTokenFilterModule<Ignored> = {
+    run: (iterator) => {
       return {
         next: () => nextValueableToken(iterator, ignoredTokens)
       };
@@ -37,6 +45,7 @@ export const createTokenFilter = <Ignored extends string>(ignoredTokens: Ignored
     reify: <Token extends TokenBase>(): TokenFilterModule<Token, Ignored> => unreified
   };
 };
+
 
 const nextValueableToken = <Token extends TokenBase, Ignored extends string>(
   iterator: Iterator<Token, undefined>,

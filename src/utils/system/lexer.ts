@@ -1,4 +1,5 @@
-import type { Module } from "./system";
+import type { Module } from './system';
+import util from 'util';
 
 type Pattern = string | RegExp;
 
@@ -17,10 +18,10 @@ export type TokenBase = {
   value?: unknown;
 };
 
-type TokenValue<R extends LexerRulesBase[string]> = 
+type TokenValue<R extends LexerRulesBase[string]> =
   R extends [Pattern, Mapper]
     ? ReturnType<R[1]>
-    : void;
+    : undefined;
 
 export type LexerToken<Rules extends LexerRulesBase> = {
   [T in keyof Rules]: {
@@ -83,7 +84,7 @@ const processRules = (rules: LexerRulesBase): Rule[] =>
       const [pattern, mapper] = Array.isArray(patternMapper)
         ? patternMapper
         : [patternMapper, undefined];
-      return { type: t, pattern, mapper } as Rule
+      return { type: t, pattern, mapper } as Rule;
     });
 
 const checkMatch = (input: string, pattern: Pattern) => {
@@ -128,15 +129,15 @@ const extractToken = (input: string, rules: Rule[]) => {
 
   const token = bestMatch.rule.mapper
     ? { type: bestMatch.rule.type, value: bestMatch.rule.mapper(bestMatch.match) }
-    : { type: bestMatch.rule.type }
+    : { type: bestMatch.rule.type };
 
   return [token, unprocessed] as const;
 };
 
 
-export const stringifyToken = (token: TokenBase) => {
+export const stringifyToken = (token: TokenBase): string => {
   if ('value' in token) {
-    return `${token.type}(${token.value})`;
+    return `${token.type}(${util.inspect(token.value)})`;
   } else {
     return token.type;
   }

@@ -16,5 +16,5 @@ it('pipes modules together', () => {
   const core = system(moduleA, moduleB, moduleC);
 
   const result = core.run('hello there');
-  expect(result).toEqual('HELLO+THERE')
+  expect(result).toEqual('HELLO+THERE');
 });

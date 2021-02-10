@@ -1,4 +1,4 @@
-export const catchError = (fn: () => unknown) => {
+export const catchError = <Err>(fn: () => unknown): Err => {
   let error: unknown;
 
   try {
@@ -11,5 +11,5 @@ export const catchError = (fn: () => unknown) => {
     throw new Error('function did not throw an error like expected');
   }
 
-  return error;
+  return error as Err;
 };

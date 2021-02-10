@@ -4,7 +4,7 @@ import type { UFn } from '../helper.types';
 
 export interface Module<A, B> {
   run: (a: A) => B;
-};
+}
 
 export interface System<A, B> {
   run: (a: A) => B;
@@ -24,8 +24,8 @@ export const system = <A, Ts extends unknown[]>(...modules: FirstArg<A> & Module
   const castModules = modules as Module<A | Ts[number], Ts[number]>[];
 
   const run = castModules.reduce(
-      (piped, m) => (a) => m.run(piped(a)),
-      ((a: A | Ts[number]) => a)
+    (piped, m) => (a) => m.run(piped(a)),
+    ((a: A | Ts[number]) => a)
   ) as UFn<A, Last<Ts>>;
 
   return {
