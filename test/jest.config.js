@@ -2,7 +2,7 @@ const path = require('path');
 
 module.exports = {
   verbose: true,
-  rootDir: '../',
+  rootDir: path.resolve(__dirname, '../'),
   moduleFileExtensions: ['ts', 'js', 'json'],
   testMatch: [
     '**/*.spec.[jt]s?(x)',
