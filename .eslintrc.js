@@ -26,6 +26,7 @@ module.exports = {
     'prefer-const': 'warn',
     'quotes': ['warn', 'single', { avoidEscape: true }],
     'semi': 'error',
+    'no-empty': ['error', { allowEmptyCatch: true }],
 
 
     'import/no-absolute-path': 'warn',
@@ -101,6 +102,8 @@ module.exports = {
         }
       },
       rules: {
+        '@typescript-eslint/no-empty-function': 'off',
+
         '@typescript-eslint/array-type': ['warn', { default: 'array' }],
         '@typescript-eslint/member-delimiter-style': 'warn',
 
@@ -111,7 +114,11 @@ module.exports = {
         '@typescript-eslint/prefer-nullish-coalescing': 'warn',
         '@typescript-eslint/prefer-optional-chain': 'warn',
 
-        '@typescript-eslint/no-unused-vars': ['error', { 'args': 'none', 'ignoreRestSiblings': true }],
+        '@typescript-eslint/no-unused-vars': ['error', {
+          'args': 'none',
+          'ignoreRestSiblings': true,
+          'varsIgnorePattern': '^_',
+        }],
       },
     },
   ]
