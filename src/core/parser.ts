@@ -3,6 +3,9 @@ import { FilteredToken } from './lexer';
 
 type RDParser = (handle: LexerHandle<FilteredToken>) => ParseTree;
 
+// TODO - change to rule('name', (handle) => PT)
+//          => { name: 'name', parser: (handle) => PT & catch errors }
+
 const program: RDParser = (handle) => {
   let children: ParseNode[] = [];
 
@@ -68,6 +71,7 @@ const fieldAccess: RDParser = (handle) => {
 
 const func: RDParser = () => {
   throw new Error('func parser not implemented yet');
+  // TODO - RETURN ERROR NODE
 };
 
 const tuple: RDParser = (handle) => {
