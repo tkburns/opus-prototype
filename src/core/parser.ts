@@ -1,27 +1,23 @@
-import { createRDParser, LexerHandle, ParseTree, ParseNode } from '&/utils/system/parser';
+import { createRDParser, LexerHandle, ParseTree, ParseNode, parseOneOf } from '&/utils/system/parser';
 import { FilteredToken } from './lexer';
 
 type RDParser = (handle: LexerHandle<FilteredToken>) => ParseTree;
 
 const program: RDParser = (handle) => {
-  try {
-    const dec = declaration(handle);
-    return {
-      type: 'program',
-      children: [dec]
-    };
-  } catch {}
+  let children: ParseNode[] = [];
 
-  try {
-    const expr = expression(handle);
-    return {
-      type: 'program',
-      children: [expr]
-    };
-  } catch {}
+  while (!handle.atEOI()) {
+    const child = parseOneOf('program', handle, [
+      declaration,
+      expression,
+    ]);
+    children = [...children, child];
+  }
 
-  const token = handle.peek();
-  throw new Error(`token ${token.type} did not match any rules for 'program'`);
+  return {
+    type: 'program',
+    children
+  };
 };
 
 const declaration: RDParser = (handle) => {
@@ -36,40 +32,18 @@ const declaration: RDParser = (handle) => {
 };
 
 const expression: RDParser = (handle) => {
-  let child: ParseNode | undefined;
-
-  try {
-    child = parenthesizedExpression(handle);
-  } catch {}
-
-  try {
-    child = fieldAccess(handle);
-  } catch {}
-
-  try {
-    child = func(handle);
-  } catch {}
-
-  try {
-    child = tuple(handle);
-  } catch {}
-
-  try {
-    child = name(handle);
-  } catch {}
-
-  try {
-    child = number(handle);
-  } catch {}
-
-  if (child == null) {
-    const token = handle.peek();
-    throw new Error(`token ${token.type} did not match any rules for 'expression'`);
-  }
+  const expr = parseOneOf('expression', handle, [
+    parenthesizedExpression,
+    fieldAccess,
+    func,
+    tuple,
+    name,
+    number,
+  ]);
 
   return {
     type: 'expression',
-    children: [child]
+    children: [expr]
   };
 };
 

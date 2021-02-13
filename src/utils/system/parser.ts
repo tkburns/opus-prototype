@@ -80,3 +80,15 @@ const createLexerHandle = <T extends TokenBase>(iterator: Iterator<T, undefined>
     }
   };
 };
+
+
+export const parseOneOf = <T extends TokenBase>(name: string, handle: LexerHandle<T>, parsers: RDParser<T>[]): ParseTree => {
+  for (const parser of parsers) {
+    try {
+      return parser(handle);
+    } catch {}
+  }
+
+  const token = handle.peek();
+  throw new Error(`token ${token.type} did not match any rules for '${name}'`);
+};
