@@ -50,7 +50,7 @@ const expression: RDParser = (handle) => {
 const parenthesizedExpression: RDParser = (handle) => {
   handle.consume('(');
   const expr = expression(handle);
-  handle.consume('(');
+  handle.consume(')');
 
   return expr;
 };
@@ -66,13 +66,44 @@ const fieldAccess: RDParser = (handle) => {
   };
 };
 
-const func: RDParser = () => {
-  throw new Error('func parser not implemented yet');
+const func: RDParser = (handle) => {
+  const args = funcArgs(handle);
+
+  handle.consume('=>');
+
+  const expr = expression(handle);
+
+  return {
+    type: 'func',
+    children: [args, expr]
+  };
+};
+
+const funcArgs: RDParser = (handle) => {
+  handle.consume('(');
+
+  let args: ParseNode[] = [];
+  while (handle.peek().type !== ')') {
+    const arg = name(handle);
+    args = [...args, arg];
+
+    if (handle.peek().type === ',') {
+      handle.consume(',');
+    }
+  }
+
+  handle.consume(')');
+
+  return {
+    type: 'func-args',
+    children: args
+  };
 };
 
 const tuple: RDParser = (handle) => {
-  let members: ParseNode[] = [];
+  handle.consume('(');
 
+  let members: ParseNode[] = [];
   while (handle.peek().type !== ')') {
     const member = expression(handle);
     members = [...members, member];
