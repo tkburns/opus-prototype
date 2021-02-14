@@ -67,36 +67,13 @@ const fieldAccess: RDParser = (handle) => {
 };
 
 const func: RDParser = (handle) => {
-  const args = funcArgs(handle);
-
+  const arg = name(handle);
   handle.consume('=>');
-
   const expr = expression(handle);
 
   return {
     type: 'func',
-    children: [args, expr]
-  };
-};
-
-const funcArgs: RDParser = (handle) => {
-  handle.consume('(');
-
-  let args: ParseNode[] = [];
-  while (handle.peek().type !== ')') {
-    const arg = name(handle);
-    args = [...args, arg];
-
-    if (handle.peek().type === ',') {
-      handle.consume(',');
-    }
-  }
-
-  handle.consume(')');
-
-  return {
-    type: 'func-args',
-    children: args
+    children: [arg, expr]
   };
 };
 
