@@ -108,14 +108,23 @@ const createLexerHandle = <T extends TokenBase>(iterator: Iterator<T, undefined>
 
 
 export const parseOneOf = <T extends TokenBase>(name: string, handle: LexerHandle<T>, parsers: RDParser<T>[]): ParseTree => {
+  const errors: Error[] = [];
+
   for (const parser of parsers) {
+    handle.checkpoint();
+
     try {
-      return parser(handle);
-    } catch { }
+      const node = parser(handle);
+      handle.commit();
+      return node;
+    } catch (e) {
+      handle.backtrack();
+      errors.push(e);
+    }
   }
 
   const token = handle.peek();
-  throw new Error(`token ${token.type} (at ${token.location.line}:${token.location.column}) did not match any rules for '${name}'`);
+  throw new Error(`token ${token.type} (at ${token.location.line}:${token.location.column}) could not be parsed by '${name}'`);
 };
 
 export const stringifyTree = (node: ParseNode): string => {
