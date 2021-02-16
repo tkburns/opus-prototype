@@ -1,4 +1,4 @@
-import { TokenBase } from './lexer';
+import { stringifyToken, TokenBase } from './lexer';
 import { Module } from './system';
 
 export type LexerHandle<T extends TokenBase> = {
@@ -92,3 +92,32 @@ export const parseOneOf = <T extends TokenBase>(name: string, handle: LexerHandl
   const token = handle.peek();
   throw new Error(`token ${token.type} (at ${token.location.line}:${token.location.column}) did not match any rules for '${name}'`);
 };
+
+export const stringifyTree = (node: ParseNode): string => {
+  const nodeS = node.type;
+
+  if ('token' in node) {
+    return nodeS + ' :: ' + stringifyToken(node.token);
+  } else if (node.children.length === 0) {
+    return nodeS + ' (ε)';
+  } else {
+    const childrenS = node.children
+      .map(stringifyTree)
+      .map((childS, num) => num + 1 !== node.children.length
+        ? indent(childS, ' ├─', ' │ ')
+        : indent(childS, ' └─', '   ')
+      );
+
+    return lines(
+      nodeS,
+      ...childrenS
+    );
+  }
+};
+
+const lines = (...strs: string[]): string =>
+  strs.join('\n');
+
+const indent = (str: string, prefix: string, indentation: string) =>
+  prefix + str.replace(/\r?\n/g, (match) => match + indentation);
+

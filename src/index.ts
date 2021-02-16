@@ -3,8 +3,8 @@ import './utils/setup-aliases';
 import minimist from 'minimist';
 import fs from 'fs';
 import path from 'path';
-import util from 'util';
 import { core } from './core';
+import { stringifyTree } from './utils/system/parser';
 
 const version = '0.0.0-development';
 const help =
@@ -45,5 +45,5 @@ if (flags.help || flags._.length !== 1) {
 
   const result = core.run(fileStr);
 
-  process.stdout.write(util.inspect(result));
+  process.stdout.write(stringifyTree(result) + '\n');
 }
