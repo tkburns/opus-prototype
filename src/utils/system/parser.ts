@@ -2,6 +2,10 @@ import { stringifyToken, TokenBase } from './lexer';
 import { Module } from './system';
 
 export type LexerHandle<T extends TokenBase> = {
+  checkpoint: () => void;
+  backtrack: () => void;
+  commit: () => void;
+
   consume: (t?: T['type']) => T;
   peek: () => T;
   atEOI: () => boolean;
@@ -36,23 +40,44 @@ export const createRDParser = <T extends TokenBase>(parse: RDParser<T>):
 const createLexerHandle = <T extends TokenBase>(iterator: Iterator<T, undefined>):
   LexerHandle<T> =>
 {
-  let next: T | undefined = undefined;
+  let cache: T[] = [];
+  let current = 0;
+  let checkpoints: number[] = [];
 
   const getNext = (): T => {
-    if (next == null) {
+    if (cache[current] == undefined) {
       const result = iterator.next();
       if (result.done) {
         throw new Error('cannot get next token; EOI reached');
       }
 
-      next = result.value;
+      cache = [...cache, result.value];
       return result.value;
     } else {
-      return next;
+      return cache[current];
     }
   };
 
   return {
+    checkpoint: () => {
+      checkpoints = [...checkpoints, current];
+    },
+    backtrack: () => {
+      if (checkpoints.length === 0) {
+        throw new Error('unable to rewind lexer handle; there are no saved checkpoints');
+      }
+
+      current = checkpoints[checkpoints.length - 1];
+      checkpoints = checkpoints.slice(0, -1);
+    },
+    commit: () => {
+      if (checkpoints.length === 0) {
+        throw new Error('unable to commit the checkpoint; there are no saved checkpoints');
+      }
+
+      checkpoints = checkpoints.slice(0, -1);
+    },
+
     consume: (expected) => {
       const token = getNext();
 
@@ -60,20 +85,20 @@ const createLexerHandle = <T extends TokenBase>(iterator: Iterator<T, undefined>
         throw new Error(`token mismatch as ${token.location.line}:${token.location.column}; expected ${expected}, but recieved ${token.type}`);
       }
 
-      next = undefined;
+      current = current + 1;
       return token;
     },
     peek: () => getNext(),
     atEOI: () => {
       // TODO - should EOI be a token..?
-      if (next != null) {
+      if (current < cache.length) {
         return false;
       } else {
         const result = iterator.next();
         if (result.done) {
           return true;
         } else {
-          next = result.value;
+          cache = [...cache, result.value];
           return false;
         }
       }
