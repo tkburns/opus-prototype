@@ -4,20 +4,45 @@ import { FilteredToken } from './lexer';
 type RDParser = (handle: LexerHandle<FilteredToken>) => ParseTree;
 
 const program: RDParser = (handle) => {
-  let children: ParseNode[] = [];
+  const children = programContents(handle);
 
-  while (!handle.atEOI()) {
-    const child = parseOneOf('program', handle, [
-      declaration,
-      expression,
-    ]);
-    children = [...children, child];
+  if (!handle.atEOI()) {
+    const token = handle.peek();
+    throw new Error(`failed to parse 'program'; expected EOI but recieved token ${token.type} (at ${token.location.line}:${token.location.column})`);
   }
 
   return {
     type: 'program',
     children
   };
+};
+
+const programContents = (handle: LexerHandle<FilteredToken>): ParseNode[] => {
+  const errors: Error[] = [];
+
+  handle.checkpoint();
+  try {
+    const node = declaration(handle);
+    const following = programContents(handle);
+    handle.commit();
+    return [node, ...following];
+  } catch (e) {
+    handle.backtrack();
+    errors.push(e);
+  }
+
+  handle.checkpoint();
+  try {
+    const node = expression(handle);
+    const following = programContents(handle);
+    handle.commit();
+    return [node, ...following];
+  } catch (e) {
+    handle.backtrack();
+    errors.push(e);
+  }
+
+  return [];
 };
 
 const declaration: RDParser = (handle) => {
@@ -94,7 +119,7 @@ const tuple: RDParser = (handle) => {
   handle.consume(')');
 
   return {
-    type: 'program',
+    type: 'tuple',
     children: members
   };
 };
