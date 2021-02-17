@@ -68,7 +68,6 @@ const createLexerHandle = <T extends TokenBase>(iterator: Iterator<T, undefined>
       }
 
       current = checkpoints[checkpoints.length - 1];
-      checkpoints = checkpoints.slice(0, -1);
     },
     commit: () => {
       if (checkpoints.length === 0) {
@@ -109,10 +108,9 @@ const createLexerHandle = <T extends TokenBase>(iterator: Iterator<T, undefined>
 
 export const parseOneOf = <T extends TokenBase>(name: string, handle: LexerHandle<T>, parsers: RDParser<T>[]): ParseTree => {
   const errors: Error[] = [];
+  handle.checkpoint();
 
   for (const parser of parsers) {
-    handle.checkpoint();
-
     try {
       const node = parser(handle);
       handle.commit();
@@ -122,6 +120,8 @@ export const parseOneOf = <T extends TokenBase>(name: string, handle: LexerHandl
       errors.push(e);
     }
   }
+
+  handle.commit();
 
   const token = handle.peek();
   throw new Error(`token ${token.type} (at ${token.location.line}:${token.location.column}) could not be parsed by '${name}'`);

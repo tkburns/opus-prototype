@@ -31,7 +31,6 @@ const programContents = (handle: LexerHandle<FilteredToken>): ParseNode[] => {
     errors.push(e);
   }
 
-  handle.checkpoint();
   try {
     const node = expression(handle);
     const following = programContents(handle);
@@ -41,6 +40,7 @@ const programContents = (handle: LexerHandle<FilteredToken>): ParseNode[] => {
     handle.backtrack();
     errors.push(e);
   }
+  handle.commit();
 
   return [];
 };
