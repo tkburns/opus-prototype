@@ -106,26 +106,63 @@ const createLexerHandle = <T extends TokenBase>(iterator: Iterator<T, undefined>
 };
 
 
-export const parseOneOf = <T extends TokenBase>(name: string, handle: LexerHandle<T>, parsers: RDParser<T>[]): ParseTree => {
-  const errors: Error[] = [];
-  handle.checkpoint();
+/* ----- foundational patterns ----- */
+
+type RDParserish<T extends TokenBase, R> = (handle: LexerHandle<T>) => R;
+
+export const oneOf = <T extends TokenBase, R>(
+  handle: LexerHandle<T>,
+  parsers: RDParserish<T, R>[]
+): R => {
 
   for (const parser of parsers) {
+    handle.checkpoint();
     try {
-      const node = parser(handle);
-      handle.commit();
-      return node;
-    } catch (e) {
+      return parser(handle);
+    } catch {
       handle.backtrack();
-      errors.push(e);
+    } finally {
+      handle.commit();
     }
   }
 
-  handle.commit();
-
   const token = handle.peek();
-  throw new Error(`token ${token.type} (at ${token.location.line}:${token.location.column}) could not be parsed by '${name}'`);
+  throw new Error(`token ${token.type} (at ${token.location.line}:${token.location.column}) could not be parsed`);
 };
+
+
+export const repeated = <T extends TokenBase, R>(handle: LexerHandle<T>, parser: RDParserish<T, R>): R[] => {
+  handle.checkpoint();
+  try {
+    const node = parser(handle);
+    const following = repeated(handle, parser);
+    return [node, ...following];
+  } catch {
+    handle.backtrack();
+  } finally {
+    handle.commit();
+  }
+
+  return [];
+};
+
+
+export const optional = <T extends TokenBase, R>(handle: LexerHandle<T>, parser: RDParserish<T, R>): R | undefined => {
+  handle.checkpoint();
+
+  try {
+    return parser(handle);
+  } catch (e) {
+    handle.backtrack();
+  } finally {
+    handle.commit();
+  }
+
+  return undefined;
+};
+
+
+/* ----- stringification ----- */
 
 export const stringifyTree = (node: ParseNode): string => {
   const nodeS = node.type;

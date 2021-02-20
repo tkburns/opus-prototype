@@ -1,10 +1,15 @@
-import { createRDParser, LexerHandle, ParseTree, ParseNode, parseOneOf } from '&/utils/system/parser';
+import { createRDParser, LexerHandle, ParseTree, repeated, oneOf, optional } from '&/utils/system/parser';
 import { FilteredToken } from './lexer';
 
 type RDParser = (handle: LexerHandle<FilteredToken>) => ParseTree;
 
 const program: RDParser = (handle) => {
-  const children = programContents(handle);
+  const children = repeated(handle, () =>
+    oneOf(handle, [
+      declaration,
+      expression
+    ])
+  );
 
   if (!handle.atEOI()) {
     const token = handle.peek();
@@ -15,34 +20,6 @@ const program: RDParser = (handle) => {
     type: 'program',
     children
   };
-};
-
-const programContents = (handle: LexerHandle<FilteredToken>): ParseNode[] => {
-  const errors: Error[] = [];
-
-  handle.checkpoint();
-  try {
-    const node = declaration(handle);
-    const following = programContents(handle);
-    handle.commit();
-    return [node, ...following];
-  } catch (e) {
-    handle.backtrack();
-    errors.push(e);
-  }
-
-  try {
-    const node = expression(handle);
-    const following = programContents(handle);
-    handle.commit();
-    return [node, ...following];
-  } catch (e) {
-    handle.backtrack();
-    errors.push(e);
-  }
-  handle.commit();
-
-  return [];
 };
 
 const declaration: RDParser = (handle) => {
@@ -57,7 +34,7 @@ const declaration: RDParser = (handle) => {
 };
 
 const expression: RDParser = (handle) => {
-  const expr = parseOneOf('expression', handle, [
+  const expr = oneOf(handle, [
     parenthesizedExpression,
     fieldAccess,
     func,
@@ -105,16 +82,14 @@ const func: RDParser = (handle) => {
 const tuple: RDParser = (handle) => {
   handle.consume('(');
 
-  let members: ParseNode[] = [];
-  while (handle.peek().type !== ')') {
+  const members = repeated(handle, () => {
     const member = expression(handle);
-    members = [...members, member];
-
-    const next = handle.peek();
-    if (next.type === ',') {
+    optional(handle, () => {
       handle.consume(',');
-    }
-  }
+    });
+
+    return member;
+  });
 
   handle.consume(')');
 
