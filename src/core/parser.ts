@@ -1,7 +1,7 @@
-import { createRDParser, LexerHandle, ParseTree, repeated, oneOf, optional } from '&/utils/system/parser';
+import { createRDParser, LexerHandle, AST, repeated, oneOf, optional } from '&/utils/system/parser';
 import { FilteredToken } from './lexer';
 
-type RDParser = (handle: LexerHandle<FilteredToken>) => ParseTree;
+type RDParser = (handle: LexerHandle<FilteredToken>) => AST;
 
 const program: RDParser = (handle) => {
   const children = repeated(handle, () =>

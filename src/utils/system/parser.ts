@@ -17,23 +17,23 @@ export type LexerHandle<T extends TokenBase> = {
   atEOI: () => boolean;
 };
 
-export type ParseNodeNT = {
+export type ASTNodeNT = {
   type: string;
-  children: ParseNode[];
+  children: ASTNode[];
 };
 
-export type ParseNodeT = {
+export type ASTNodeT = {
   type: string;
   token: TokenBase;
 };
 
-export type ParseNode = ParseNodeNT | ParseNodeT;
-export type ParseTree = ParseNode;
+export type ASTNode = ASTNodeNT | ASTNodeT;
+export type AST = ASTNode;
 
-type RDParser<T extends TokenBase> = (handle: LexerHandle<T>) => ParseTree;
+type RDParser<T extends TokenBase> = (handle: LexerHandle<T>) => AST;
 
 export const createRDParser = <T extends TokenBase>(parse: RDParser<T>):
-  Module<Iterator<T, undefined>, ParseTree> =>
+  Module<Iterator<T, undefined>, AST> =>
 {
   return {
     run: (iterator) => {
@@ -170,7 +170,7 @@ export const optional = <T extends TokenBase, R>(handle: LexerHandle<T>, parser:
 
 /* ----- stringification ----- */
 
-export const stringifyTree = (node: ParseNode): string => {
+export const stringifyAST = (node: AST): string => {
   const nodeS = node.type;
 
   if ('token' in node) {
@@ -179,7 +179,7 @@ export const stringifyTree = (node: ParseNode): string => {
     return nodeS + ' (ε)';
   } else {
     const childrenS = node.children
-      .map(stringifyTree)
+      .map(stringifyAST)
       .map((childS, num) => num + 1 !== node.children.length
         ? indent(childS, ' ├─', ' │ ')
         : indent(childS, ' └─', '   ')
