@@ -1,12 +1,18 @@
 import { stringifyToken, TokenBase } from './lexer';
 import { Module } from './system';
 
+type Matching<T extends TokenBase, N extends T['type']> = T & { type: N };
+interface Consume<T extends TokenBase> {
+  <N extends T['type']>(t: N): Matching<T, N>;
+  (t?: string): T;
+}
+
 export type LexerHandle<T extends TokenBase> = {
   checkpoint: () => void;
   backtrack: () => void;
   commit: () => void;
 
-  consume: (t?: T['type']) => T;
+  consume: Consume<T>;
   peek: () => T;
   atEOI: () => boolean;
 };
@@ -77,7 +83,7 @@ const createLexerHandle = <T extends TokenBase>(iterator: Iterator<T, undefined>
       checkpoints = checkpoints.slice(0, -1);
     },
 
-    consume: (expected) => {
+    consume: <N extends T['type']>(expected?: N) => {
       const token = getNext();
 
       if (expected != null && token.type !== expected) {
@@ -85,7 +91,7 @@ const createLexerHandle = <T extends TokenBase>(iterator: Iterator<T, undefined>
       }
 
       current = current + 1;
-      return token;
+      return token as Matching<T, N>;
     },
     peek: () => getNext(),
     atEOI: () => {
