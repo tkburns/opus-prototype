@@ -29,6 +29,8 @@ const declaration: RDParser = (handle) => {
 
   return {
     type: 'declaration',
+    name: vrb,
+    expression: expr,
     children: [vrb, expr]
   };
 };
@@ -64,6 +66,8 @@ const fieldAccess: RDParser = (handle) => {
 
   return {
     type: 'field-access',
+    target,
+    method,
     children: [target, method]
   };
 };
@@ -75,6 +79,8 @@ const func: RDParser = (handle) => {
 
   return {
     type: 'func',
+    arg,
+    body: expr,
     children: [arg, expr]
   };
 };
@@ -95,6 +101,7 @@ const tuple: RDParser = (handle) => {
 
   return {
     type: 'tuple',
+    members,
     children: members
   };
 };
@@ -104,6 +111,7 @@ const name: RDParser = (handle) => {
 
   return {
     type: 'name',
+    value: token.value,
     token
   };
 };
@@ -113,6 +121,7 @@ const number: RDParser = (handle) => {
 
   return {
     type: 'number',
+    value: token.value,
     token
   };
 };
