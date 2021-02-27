@@ -116,15 +116,15 @@ const createLexerHandle = <T extends TokenBase>(iterator: Iterator<T, undefined>
 
 type RDParserish<T extends TokenBase, R> = (handle: LexerHandle<T>) => R;
 
-export const oneOf = <T extends TokenBase, R>(
+export const oneOf = <T extends TokenBase, Ps extends RDParserish<T, unknown>>(
   handle: LexerHandle<T>,
-  parsers: RDParserish<T, R>[]
-): R => {
+  parsers: Ps[]
+): ReturnType<Ps> => {
 
   for (const parser of parsers) {
     handle.checkpoint();
     try {
-      return parser(handle);
+      return parser(handle) as ReturnType<Ps>;
     } catch {
       handle.backtrack();
     } finally {

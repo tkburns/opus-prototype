@@ -1,9 +1,9 @@
-import { createRDParser, LexerHandle, AST, repeated, oneOf, optional } from '&/utils/system/parser';
+import { createRDParser, LexerHandle, repeated, oneOf, optional } from '&/utils/system/parser';
 import { FilteredToken } from './lexer';
 
-type RDParser = (handle: LexerHandle<FilteredToken>) => AST;
+type Handle = LexerHandle<FilteredToken>;
 
-const program: RDParser = (handle) => {
+const program = (handle: Handle) => {
   const children = repeated(handle, () =>
     oneOf(handle, [
       declaration,
@@ -19,39 +19,42 @@ const program: RDParser = (handle) => {
   return {
     type: 'program',
     children
-  };
+  } as const;
 };
 
-const declaration: RDParser = (handle) => {
+const declaration = (handle: Handle) => {
   const vrb = name(handle);
   handle.consume('=');
   const expr = expression(handle);
 
   return {
     type: 'declaration',
+    children: [vrb, expr],
     name: vrb,
-    expression: expr,
-    children: [vrb, expr]
-  };
+    expression: expr
+  } as const;
 };
 
-const expression: RDParser = (handle) => {
-  const expr = oneOf(handle, [
-    parenthesizedExpression,
-    fieldAccess,
-    func,
+type ExpressionNode = (
+  // ReturnType<typeof parenthesizedExpression> |
+  // ReturnType<typeof fieldAccess> |
+  // ReturnType<typeof func> |
+  ReturnType<typeof tuple> |
+  ReturnType<typeof name> |
+  ReturnType<typeof number>
+);
+const expression = (handle: Handle): ExpressionNode => {
+  return oneOf(handle, [
+    // parenthesizedExpression,
+    // fieldAccess,
+    // func,
     tuple,
     name,
     number,
   ]);
-
-  return {
-    type: 'expression',
-    children: [expr]
-  };
 };
 
-const parenthesizedExpression: RDParser = (handle) => {
+const parenthesizedExpression = (handle: Handle) => {
   handle.consume('(');
   const expr = expression(handle);
   handle.consume(')');
@@ -59,7 +62,7 @@ const parenthesizedExpression: RDParser = (handle) => {
   return expr;
 };
 
-const fieldAccess: RDParser = (handle) => {
+const fieldAccess = (handle: Handle) => {
   const target = name(handle);
   handle.consume('.');
   const method = name(handle);
@@ -69,10 +72,10 @@ const fieldAccess: RDParser = (handle) => {
     target,
     method,
     children: [target, method]
-  };
+  } as const;
 };
 
-const func: RDParser = (handle) => {
+const func = (handle: Handle) => {
   const arg = name(handle);
   handle.consume('=>');
   const expr = expression(handle);
@@ -82,10 +85,10 @@ const func: RDParser = (handle) => {
     arg,
     body: expr,
     children: [arg, expr]
-  };
+  } as const;
 };
 
-const tuple: RDParser = (handle) => {
+const tuple = (handle: Handle) => {
   handle.consume('(');
 
   const members = repeated(handle, () => {
@@ -103,27 +106,27 @@ const tuple: RDParser = (handle) => {
     type: 'tuple',
     members,
     children: members
-  };
+  } as const;
 };
 
-const name: RDParser = (handle) => {
+const name = (handle: Handle) => {
   const token = handle.consume('name');
 
   return {
     type: 'name',
     value: token.value,
     token
-  };
+  } as const;
 };
 
-const number: RDParser = (handle) => {
+const number = (handle: Handle) => {
   const token = handle.consume('number');
 
   return {
     type: 'number',
     value: token.value,
     token
-  };
+  } as const;
 };
 
 export const parser = createRDParser(program);
