@@ -57,7 +57,7 @@ const createLexerHandle = <T extends TokenBase>(iterator: Iterator<T, undefined>
       const token = getNext();
 
       if (expected != null && token.type !== expected) {
-        throw new Error(`token mismatch; expected ${expected}, but recieved ${token.type}`);
+        throw new Error(`token mismatch as ${token.location.line}:${token.location.column}; expected ${expected}, but recieved ${token.type}`);
       }
 
       next = undefined;
@@ -86,9 +86,9 @@ export const parseOneOf = <T extends TokenBase>(name: string, handle: LexerHandl
   for (const parser of parsers) {
     try {
       return parser(handle);
-    } catch {}
+    } catch { }
   }
 
   const token = handle.peek();
-  throw new Error(`token ${token.type} did not match any rules for '${name}'`);
+  throw new Error(`token ${token.type} (at ${token.location.line}:${token.location.column}) did not match any rules for '${name}'`);
 };
