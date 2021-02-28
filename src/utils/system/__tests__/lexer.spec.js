@@ -2,6 +2,8 @@ import { createLexer } from '../lexer';
 import { runIterator } from '&test/utils/iterator';
 import { catchError } from '&test/utils/error';
 
+const loc = (line, column) => ({ location: { line, column } });
+
 it('extracts tokens from input', () => {
   const lexer = createLexer({
     '(': '(',
@@ -14,11 +16,11 @@ it('extracts tokens from input', () => {
   const result = runIterator(iterator);
 
   expect(result).toEqual([
-    { type: '(' },
-    { type: 'word', value: 'hello' },
-    { type: 'space' },
-    { type: 'word', value: 'there' },
-    { type: ')' },
+    { type: '(', ...loc(1, 1) },
+    { type: 'word', value: 'hello', ...loc(1, 2) },
+    { type: 'space', ...loc(1, 7) },
+    { type: 'word', value: 'there', ...loc(1, 8) },
+    { type: ')', ...loc(1, 13) },
   ]);
 });
 
@@ -33,9 +35,9 @@ it('selects the longest match', () => {
   const result = runIterator(iterator);
 
   expect(result).toEqual([
-    { type: 'let' },
-    { type: 'space' },
-    { type: 'word', value: 'letter' },
+    { type: 'let', ...loc(1, 1) },
+    { type: 'space', ...loc(1, 4) },
+    { type: 'word', value: 'letter', ...loc(1, 5) },
   ]);
 });
 
