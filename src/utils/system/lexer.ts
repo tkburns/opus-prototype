@@ -13,9 +13,15 @@ export type LexerModule<T extends LexerRulesBase = LexerRulesBase> =
   Module<string, Iterator<LexerToken<T>, undefined>>;
 
 
+type Location = {
+  line: number;
+  column: number;
+};
+
 export type TokenBase = {
   type: string;
   value?: unknown;
+  location: Location;
 };
 
 type TokenValue<R extends LexerRulesBase[string]> =
@@ -27,6 +33,7 @@ export type LexerToken<Rules extends LexerRulesBase> = {
   [T in keyof Rules]: {
     type: T;
     value: TokenValue<Rules[T]>;
+    location: Location;
   };
 }[keyof Rules];
 
@@ -48,6 +55,10 @@ type RuleMatch = {
   match: string;
 };
 
+type LocationHandler = {
+  accept: (source: string) => Location;
+};
+
 
 export const createLexer = <Rules extends LexerRulesBase>(rules: Rules):
   LexerModule<Rules> =>
@@ -57,6 +68,7 @@ export const createLexer = <Rules extends LexerRulesBase>(rules: Rules):
   return {
     run: (input) => {
       let unprocessed = input;
+      const lHandler = createLocationHandler();
 
       return {
         next: () => {
@@ -64,7 +76,7 @@ export const createLexer = <Rules extends LexerRulesBase>(rules: Rules):
             return { value: undefined, done: true };
           }
 
-          const [token, nextUnprocessed] = extractToken(unprocessed, ruleList);
+          const [token, nextUnprocessed] = extractToken(unprocessed, ruleList, lHandler);
           unprocessed = nextUnprocessed;
 
           return {
@@ -100,7 +112,7 @@ const checkMatch = (input: string, pattern: Pattern) => {
   }
 };
 
-const extractToken = (input: string, rules: Rule[]) => {
+const extractToken = (input: string, rules: Rule[], lHandler: LocationHandler): [TokenBase, string] => {
   const matches = rules
     .map(rule => ({ rule, match: checkMatch(input, rule.pattern) }))
     .filter((result): result is RuleMatch => result.match != null);
@@ -125,13 +137,14 @@ const extractToken = (input: string, rules: Rule[]) => {
     throw new Error(`unable to find a token for '${unprocessedSlice}'`);
   }
 
+  const location = lHandler.accept(bestMatch.match);
   const unprocessed = input.slice(bestMatch.match.length);
 
   const token = bestMatch.rule.mapper
-    ? { type: bestMatch.rule.type, value: bestMatch.rule.mapper(bestMatch.match) }
-    : { type: bestMatch.rule.type };
+    ? { type: bestMatch.rule.type, value: bestMatch.rule.mapper(bestMatch.match), location }
+    : { type: bestMatch.rule.type, location };
 
-  return [token, unprocessed] as const;
+  return [token, unprocessed];
 };
 
 
@@ -141,4 +154,34 @@ export const stringifyToken = (token: TokenBase): string => {
   } else {
     return token.type;
   }
+};
+
+
+const createLocationHandler = (): LocationHandler => {
+  let location = {
+    line: 1,
+    column: 1,
+  };
+
+  return {
+    accept: (source: string) => {
+      const currentLocation = location;
+      location = advancedLocation(location, source);
+      return currentLocation;
+    },
+  };
+};
+
+const advancedLocation = (prevLocation: Location, source: string): Location => {
+  const segments = source.split(/\r\n|\r|\n/);
+
+  const numLines = segments.length - 1;
+  const lastLine = segments[segments.length - 1] ?? '';
+
+  return {
+    line: prevLocation.line + numLines,
+    column: numLines <= 1
+      ? prevLocation.column + lastLine.length
+      : lastLine.length
+  };
 };
