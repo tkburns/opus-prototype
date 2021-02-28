@@ -20,5 +20,5 @@ it('extracts tokens from input', () => {
     { type: 'b' },
     { type: 'c' },
     { type: 'e' },
-  ])
+  ]);
 });

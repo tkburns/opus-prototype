@@ -1,7 +1,6 @@
-import moduleAlias from 'module-alias';
+import { addAliases } from 'module-alias';
 import path from 'path';
 
-moduleAlias.addAliases({
+addAliases({
   '&': path.resolve(__dirname, '../'),
 });
- 

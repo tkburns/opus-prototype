@@ -19,7 +19,7 @@ it('extracts tokens from input', () => {
     { type: 'space' },
     { type: 'word', value: 'there' },
     { type: ')' },
-  ])
+  ]);
 });
 
 it('selects the longest match', () => {
@@ -36,7 +36,7 @@ it('selects the longest match', () => {
     { type: 'let' },
     { type: 'space' },
     { type: 'word', value: 'letter' },
-  ])
+  ]);
 });
 
 it('throws an error if it cannot match a token', () => {
@@ -48,5 +48,5 @@ it('throws an error if it cannot match a token', () => {
   const iterator = lexer.run('hello 123');
   const error = catchError(() => runIterator(iterator));
 
-  expect(error).toBeDefined()
+  expect(error).toBeDefined();
 });

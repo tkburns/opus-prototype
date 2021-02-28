@@ -1,8 +1,8 @@
-import { Module } from "./system";
+import { Module } from './system';
 
 export const collect = <T>(): Module<Iterator<T, undefined>, T[]> => ({
   run: (iterator: Iterator<T, undefined>) => {
-    let collected = [];
+    const collected = [];
     let result = iterator.next();
 
     while (!result.done) {

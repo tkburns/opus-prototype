@@ -1,5 +1,5 @@
-import { createLexer, LexerModuleToken } from "&/utils/system/lexer";
-import { createTokenFilter, FilterModuleToken } from "&/utils/system/token-filter";
+import { createLexer, LexerModuleToken } from '&/utils/system/lexer';
+import { createTokenFilter, FilterModuleToken } from '&/utils/system/token-filter';
 
 export const lexer = createLexer({
   '(': '(',
