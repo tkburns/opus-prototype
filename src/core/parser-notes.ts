@@ -34,58 +34,126 @@ const r = <F extends (...args: any[]) => any>(f: (rec: F) => F) =>
   (...args: Parameters<F>) => {};
 
 
+// type Lazy<T> = [T][0];
+// type GetX<T extends (...args: any) => any> = [ReturnType<T>][0];
+
+// type X = GetX<typeof x>;
+
+// const x = () => {
+//   return {
+//     name: 'X',
+//     children: []
+//   } as {
+//     name: string;
+//     children: X[];
+//   };
+// };
 
 
+// type F = (
+//   { even: ReturnType<typeof even> } |
+//   { odd: ReturnType<typeof odd> }
+// );
+// declare const f: (i: number) => F;
 
+// type F = (
+//   typeof even |
+//   typeof odd
+// );
+// declare const f: (i: number) => ReturnType<F>;
 
-
-
+type F = { value: (
+  ReturnType<typeof even> |
+  ReturnType<typeof odd>
+); };
+const _f = (i: number): F => {
+  if (i % 2 === 0) {
+    // return {
+    //   even: even(i)
+    // };
+    return { value: even(i) };
+  } else {
+    // return {
+    //   odd: odd(i)
+    // };
+    return { value: odd(i) };
+  }
+};
 
 const f = (i: number) => {
-  const arr = g(i);
+  return _f(i).value as {};
+};
 
+const even = (i: number) => {
   return {
-    arr
+    num: i,
+    next: f(i / 2)
   };
 };
-
-const g = (i: number) => {
-  if (i <= 0 ) {
-    return [];
-  } else {
-    return [f(i - 1)];
-  }
+const odd = (i: number) => {
+  return { num: i };
 };
 
 
+// const f = (i: number) => {
+//   if (i % 2 === 0) {
+//     // return {
+//     //   even: even(i)
+//     // };
+//     return even(i);
+//   } else {
+//     // return {
+//     //   odd: odd(i)
+//     // };
+//     return odd(i);
+//   }
+// };
 
-const mapObject = <O extends {}, M extends (k: O[keyof O]) => any>(o: O, m: M) => {
-  return Object.entries<O[keyof O]>(o)
-    .map(([k, v]) => [k, m(v)])
-    .reduce((o2, [k, mapped]) => Object.assign(o2, { [k]: mapped }), {});
-};
+// type Even = { num: number, next: ReturnType<typeof f> };
+// const even = (i: number): Even => {
+//   return {
+//     num: i,
+//     next: f(i / 2)
+//   };
+// };
+// const odd = (i: number) => {
+//   return { num: i };
+// };
+
+f(12);
 
 
-const wrap = <M extends {}>(m: M) => {
-  const bound = mapObject(m, () => {});
-};
 
 
 
-wrap({
-  f: (x, i: number) => {
-    const arr = x.g(i);
 
-    return {
-      arr
-    };
-  },
+// const mapObject = <O extends {}, M extends (k: O[keyof O]) => any>(o: O, m: M) => {
+//   return Object.entries<O[keyof O]>(o)
+//     .map(([k, v]) => [k, m(v)])
+//     .reduce((o2, [k, mapped]) => Object.assign(o2, { [k]: mapped }), {});
+// };
 
-  g: (x, i: number) => {
-    if (i <= 0 ) {
-      return [];
-    } else {
-      return [x.f(i - 1)];
-    }
-  }
-});
+
+// const wrap = <M extends {}>(m: M) => {
+//   const bound = mapObject(m, () => {});
+// };
+
+
+
+// wrap({
+//   f: (x, i: number) => {
+//     const arr = x.g(i);
+
+//     return {
+//       arr
+//     };
+//   },
+
+//   g: (x, i: number) => {
+//     if (i <= 0 ) {
+//       return [];
+//     } else {
+//       return [x.f(i - 1)];
+//     }
+//   }
+// });

@@ -3,6 +3,14 @@ import { FilteredToken } from './lexer';
 
 type Handle = LexerHandle<FilteredToken>;
 
+type unreadonly<T> =
+  T extends number ? T :
+  T extends string ? T :
+  T extends boolean ? T
+    : { -readonly [K in keyof T]: unreadonly<T[K]> };
+
+const unreadonly = <T>(t: T) => t as unreadonly<T>;
+
 const program = (handle: Handle) => {
   const children = repeated(handle, () =>
     oneOf(handle, [
@@ -16,10 +24,10 @@ const program = (handle: Handle) => {
     throw new Error(`failed to parse 'program'; expected EOI but recieved token ${token.type} (at ${token.location.line}:${token.location.column})`);
   }
 
-  return {
+  return unreadonly({
     type: 'program',
     children
-  } as const;
+  } as const);
 };
 
 const declaration = (handle: Handle) => {
@@ -35,23 +43,35 @@ const declaration = (handle: Handle) => {
   } as const;
 };
 
-type ExpressionNode = (
-  // ReturnType<typeof parenthesizedExpression> |
-  // ReturnType<typeof fieldAccess> |
-  // ReturnType<typeof func> |
+
+type ExpressionSubNode = (
+  ReturnType<typeof parenthesizedExpression> |
+  ReturnType<typeof fieldAccess> |
+  ReturnType<typeof func> |
   ReturnType<typeof tuple> |
   ReturnType<typeof name> |
   ReturnType<typeof number>
 );
+type ExpressionNode = {
+  type: 'expression';
+  expr: ExpressionSubNode;
+  children: [ExpressionSubNode];
+};
 const expression = (handle: Handle): ExpressionNode => {
-  return oneOf(handle, [
-    // parenthesizedExpression,
-    // fieldAccess,
-    // func,
+  const expr = oneOf(handle, [
+    parenthesizedExpression,
+    fieldAccess,
+    func,
     tuple,
     name,
     number,
   ]);
+
+  return {
+    type: 'expression',
+    expr,
+    children: [expr]
+  };
 };
 
 const parenthesizedExpression = (handle: Handle) => {
@@ -118,6 +138,8 @@ const name = (handle: Handle) => {
     token
   } as const;
 };
+// type NameNode = ReturnType<typeof _name>;
+// const name: (handle: Handle) => NameNode = _name;
 
 const number = (handle: Handle) => {
   const token = handle.consume('number');
@@ -128,5 +150,7 @@ const number = (handle: Handle) => {
     token
   } as const;
 };
+// type NumberNode = ReturnType<typeof _number>;
+// const number: (handle: Handle) => NumberNode = _number;
 
 export const parser = createRDParser(program);
