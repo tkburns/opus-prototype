@@ -175,13 +175,13 @@ const createLocationHandler = (): LocationHandler => {
 const advancedLocation = (prevLocation: Location, source: string): Location => {
   const segments = source.split(/\r\n|\r|\n/);
 
-  const numLines = segments.length - 1;
+  const numLines = segments.length;
   const lastLine = segments[segments.length - 1] ?? '';
 
   return {
-    line: prevLocation.line + numLines,
-    column: numLines <= 1
-      ? prevLocation.column + lastLine.length
-      : lastLine.length
+    line: prevLocation.line + numLines - 1,
+    column: numLines > 1
+      ? lastLine.length + 1
+      : prevLocation.column + lastLine.length
   };
 };
