@@ -24,6 +24,30 @@ it('extracts tokens from input', () => {
   ]);
 });
 
+it('tracks newlines in locations', () => {
+  const lexer = createLexer({
+    word: [/[a-zA-Z]+/, s => s],
+    space: /\s+/
+  });
+
+  const iterator = lexer.run('hello there\n\nnice to  meet \n you');
+  const result = runIterator(iterator);
+
+  expect(result).toEqual([
+    { type: 'word', value: 'hello', ...loc(1, 1) },
+    { type: 'space', ...loc(1, 6) },
+    { type: 'word', value: 'there', ...loc(1, 7) },
+    { type: 'space', ...loc(1, 12) },
+    { type: 'word', value: 'nice', ...loc(3, 1) },
+    { type: 'space', ...loc(3, 5) },
+    { type: 'word', value: 'to', ...loc(3, 6) },
+    { type: 'space', ...loc(3, 8) },
+    { type: 'word', value: 'meet', ...loc(3, 10) },
+    { type: 'space', ...loc(3, 14) },
+    { type: 'word', value: 'you', ...loc(4, 2) },
+  ]);
+});
+
 it('selects the longest match', () => {
   const lexer = createLexer({
     let: 'let',
