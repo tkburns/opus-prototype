@@ -27,7 +27,7 @@ export type TokenBase = {
 type TokenValue<R extends LexerRulesBase[string]> =
   R extends [Pattern, Mapper]
     ? ReturnType<R[1]>
-    : undefined;
+    : never;
 
 export type LexerToken<Rules extends LexerRulesBase> = {
   [T in keyof Rules]: {
