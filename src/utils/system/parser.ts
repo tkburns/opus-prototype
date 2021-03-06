@@ -1,4 +1,4 @@
-import { stringifyToken, TokenBase } from './lexer';
+import { TokenBase } from './lexer';
 import { Module } from './system';
 
 type Matching<T extends TokenBase, N extends T['type']> = T & { type: N };
@@ -17,23 +17,15 @@ export type LexerHandle<T extends TokenBase> = {
   atEOI: () => boolean;
 };
 
-export type ASTNodeNT = {
+export type ASTBase = ASTNodeBase;
+export type ASTNodeBase = {
   type: string;
-  children: ASTNode[];
 };
 
-export type ASTNodeT = {
-  type: string;
-  token: TokenBase;
-};
-
-export type ASTNode = ASTNodeNT | ASTNodeT;
-export type AST = ASTNode;
-
-type RDParser<T extends TokenBase> = (handle: LexerHandle<T>) => AST;
+type RDParser<T extends TokenBase> = (handle: LexerHandle<T>) => ASTBase;
 
 export const createRDParser = <T extends TokenBase>(parse: RDParser<T>):
-  Module<Iterator<T, undefined>, AST> =>
+  Module<Iterator<T, undefined>, ASTBase> =>
 {
   return {
     run: (iterator) => {
@@ -166,35 +158,3 @@ export const optional = <T extends TokenBase, R>(handle: LexerHandle<T>, parser:
 
   return undefined;
 };
-
-
-/* ----- stringification ----- */
-
-export const stringifyAST = (node: AST): string => {
-  const nodeS = node.type;
-
-  if ('token' in node) {
-    return nodeS + ' :: ' + stringifyToken(node.token);
-  } else if (node.children.length === 0) {
-    return nodeS + ' (ε)';
-  } else {
-    const childrenS = node.children
-      .map(stringifyAST)
-      .map((childS, num) => num + 1 !== node.children.length
-        ? indent(childS, ' ├─', ' │ ')
-        : indent(childS, ' └─', '   ')
-      );
-
-    return lines(
-      nodeS,
-      ...childrenS
-    );
-  }
-};
-
-const lines = (...strs: string[]): string =>
-  strs.join('\n');
-
-const indent = (str: string, prefix: string, indentation: string) =>
-  prefix + str.replace(/\r?\n/g, (match) => match + indentation);
-
