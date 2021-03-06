@@ -29,7 +29,6 @@ const declaration: RDParser<AST.Declaration> = (handle) => {
     type: 'declaration',
     name: vrb,
     expression: expr,
-    children: [vrb, expr]
   };
 };
 
@@ -61,7 +60,6 @@ const fieldAccess: RDParser<AST.FieldAccess> = (handle) => {
     type: 'field-access',
     target,
     method,
-    children: [target, method]
   };
 };
 
@@ -74,7 +72,6 @@ const func: RDParser<AST.Func> = (handle) => {
     type: 'function',
     arg,
     body: expr,
-    children: [arg, expr]
   };
 };
 
@@ -95,7 +92,6 @@ const tuple: RDParser<AST.Tuple> = (handle) => {
   return {
     type: 'tuple',
     members,
-    children: members
   };
 };
 
