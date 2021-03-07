@@ -44,5 +44,5 @@ if (flags.help || flags._.length !== 1) {
 
   const result = core.run(fileStr);
 
-  process.stdout.write(JSON.stringify(result) + '\n');
+  process.stdout.write(result + '\n');
 }

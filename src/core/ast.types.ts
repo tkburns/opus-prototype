@@ -1,6 +1,17 @@
 import { TokenMap } from './lexer';
 
 export type AST = Program;
+export type Node = (
+  Program |
+  Declaration |
+  FieldAccess |
+  Func |
+  Tuple |
+  Name |
+  Numeral
+);
+
+
 export type Program = {
   type: 'program';
   declarations: Declaration[];
