@@ -35,7 +35,6 @@ const declaration: RDParser<AST.Declaration> = (handle) => {
 const expression: RDParser<AST.Expression> = (handle) => {
   return oneOf(handle, [
     parenthesizedExpression,
-    fieldAccess,
     func,
     tuple,
     name,
@@ -49,18 +48,6 @@ const parenthesizedExpression: RDParser<AST.Expression> = (handle) => {
   handle.consume(')');
 
   return expr;
-};
-
-const fieldAccess: RDParser<AST.FieldAccess> = (handle) => {
-  const target = name(handle);
-  handle.consume('.');
-  const method = name(handle);
-
-  return {
-    type: 'field-access',
-    target,
-    method,
-  };
 };
 
 const func: RDParser<AST.Func> = (handle) => {

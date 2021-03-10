@@ -20,14 +20,6 @@ const walkers = {
       node.expression
     )
   ),
-  'field-access': (node: AST.FieldAccess, process: (node: AST.Node) => string) => lines(
-    node.type,
-    ...stringifyASTChildren(
-      process,
-      node.target,
-      node.method
-    )
-  ),
   'function': (node: AST.Func, process: (node: AST.Node) => string) => lines(
     node.type,
     ...stringifyASTChildren(
