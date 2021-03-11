@@ -1,4 +1,6 @@
 foo = 12
-bar = x => (x, foo)
+bar = x => (x, 13)
 
-foo
+v = bar(foo)
+
+print(v)

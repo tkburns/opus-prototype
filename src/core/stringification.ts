@@ -20,6 +20,14 @@ const walkers = {
       node.expression
     )
   ),
+  'function-call': (node: AST.FuncCall, process: (node: AST.Node) => string) => lines(
+    node.type,
+    ...stringifyASTChildren(
+      process,
+      node.func,
+      node.arg
+    )
+  ),
   'function': (node: AST.Func, process: (node: AST.Node) => string) => lines(
     node.type,
     ...stringifyASTChildren(
