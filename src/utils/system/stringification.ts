@@ -16,8 +16,8 @@ export const stringifyToken = (token: TokenBase): string => {
 
 export const indentChild = (str: string, lastChild: boolean): string =>
   lastChild
-    ? indent(str, ' └─', '   ')
-    : indent(str, ' ├─', ' │ ');
+    ? indent(str, ' └─ ', '    ')
+    : indent(str, ' ├─ ', ' │  ');
 
 export const indent = (str: string, prefix: string, indentation: string): string =>
   prefix + str.replace(/\r?\n/g, (match) => match + indentation);

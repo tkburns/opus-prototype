@@ -1,57 +1,58 @@
 import { indentChild, lines } from '&/utils/system/stringification';
-import { createWalkerModule } from '&/utils/system/tree-walker';
+import { Walkers, createWalkerModule, Walk } from '&/utils/system/tree-walker';
 import type * as AST from './ast.types';
 
+const stringifyBranch = (process: Walk<AST.Node, string>, nodeType: string, children: AST.Node[]) =>
+  lines(
+    nodeType,
+    ...children.map(process)
+      .map((child, index) => indentChild(child, index === children.length - 1))
+  );
 
-const walkers = {
-  'program': (node: AST.Program, process: (node: AST.Node) => string) => lines(
+const stringifyLeaf = (node: Extract<AST.Node, { value: unknown }>) =>
+  `${node.type} :: ${node.value}`;
+
+
+const walkers: Walkers<AST.Node, string> = {
+  'program': (node, process) => stringifyBranch(
+    process,
     node.type,
-    ...stringifyASTChildren(
-      process,
+    [
       ...node.declarations,
       node.topExpression
-    )
+    ]
   ),
-  'declaration': (node: AST.Declaration, process: (node: AST.Node) => string) => lines(
+  'declaration': (node, process) => stringifyBranch(
+    process,
     node.type,
-    ...stringifyASTChildren(
-      process,
+    [
       node.name,
       node.expression
-    )
+    ]
   ),
-  'field-access': (node: AST.FieldAccess, process: (node: AST.Node) => string) => lines(
+  'function-call': (node, process) => stringifyBranch(
+    process,
     node.type,
-    ...stringifyASTChildren(
-      process,
-      node.target,
-      node.method
-    )
+    [
+      node.func,
+      node.arg
+    ]
   ),
-  'function': (node: AST.Func, process: (node: AST.Node) => string) => lines(
+  'function': (node, process) => stringifyBranch(
+    process,
     node.type,
-    ...stringifyASTChildren(
-      process,
+    [
       node.arg,
       node.body
-    )
+    ]
   ),
-  'tuple': (node: AST.Tuple, process: (node: AST.Node) => string) => lines(
+  'tuple': (node, process) => stringifyBranch(
+    process,
     node.type,
-    ...stringifyASTChildren(
-      process,
-      ...node.members,
-    )
+    node.members,
   ),
-  'name': (node: AST.Name) =>
-    `${node.type} :: ${node.value}`,
-  'number': (node: AST.Numeral) =>
-    `${node.type} :: ${node.value}`,
+  'name': stringifyLeaf,
+  'number': stringifyLeaf,
 };
 
-const stringifyASTChildren = (process: (node: AST.Node) => string, ...children: AST.Node[]): string[] =>
-  children
-    .map(process)
-    .map((child, index) => indentChild(child, index === children.length - 1));
-
-export const astStringifier = createWalkerModule<AST.Node, string>(walkers);
+export const astStringifier = createWalkerModule(walkers);

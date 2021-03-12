@@ -4,7 +4,7 @@ export type AST = Program;
 export type Node = (
   Program |
   Declaration |
-  FieldAccess |
+  FuncCall |
   Func |
   Tuple |
   Name |
@@ -25,18 +25,18 @@ export type Declaration = {
 };
 
 export type Expression = (
-  FieldAccess |
+  FuncCall |
   Func |
   Tuple |
   Name |
   Numeral
 );
 
-export type FieldAccess = {
-  type: 'field-access';
-  target: Name;
-  method: Name;
-};
+export type FuncCall = {
+  type: 'function-call';
+  func: Expression;
+  arg: Expression;
+}
 
 export type Func = {
   type: 'function';

@@ -29,14 +29,19 @@ const declaration: RDParser<AST.Declaration> = (handle) => {
     type: 'declaration',
     name: vrb,
     expression: expr,
-    children: [vrb, expr]
   };
 };
 
 const expression: RDParser<AST.Expression> = (handle) => {
   return oneOf(handle, [
+    funcCall,
+    expressionRecSafe
+  ]);
+};
+
+const expressionRecSafe: RDParser<AST.Expression> = (handle) => {
+  return oneOf(handle, [
     parenthesizedExpression,
-    fieldAccess,
     func,
     tuple,
     name,
@@ -52,16 +57,16 @@ const parenthesizedExpression: RDParser<AST.Expression> = (handle) => {
   return expr;
 };
 
-const fieldAccess: RDParser<AST.FieldAccess> = (handle) => {
-  const target = name(handle);
-  handle.consume('.');
-  const method = name(handle);
+const funcCall: RDParser<AST.FuncCall> = (handle) => {
+  const func = expressionRecSafe(handle);
+  handle.consume('(');
+  const arg = expression(handle);
+  handle.consume(')');
 
   return {
-    type: 'field-access',
-    target,
-    method,
-    children: [target, method]
+    type: 'function-call',
+    func,
+    arg,
   };
 };
 
@@ -74,7 +79,6 @@ const func: RDParser<AST.Func> = (handle) => {
     type: 'function',
     arg,
     body: expr,
-    children: [arg, expr]
   };
 };
 
@@ -95,7 +99,6 @@ const tuple: RDParser<AST.Tuple> = (handle) => {
   return {
     type: 'tuple',
     members,
-    children: members
   };
 };
 
