@@ -1,5 +1,4 @@
 import type { Module } from './system';
-import util from 'util';
 
 type Pattern = string | RegExp;
 
@@ -27,7 +26,7 @@ export type TokenBase = {
 type TokenValue<R extends LexerRulesBase[string]> =
   R extends [Pattern, Mapper]
     ? ReturnType<R[1]>
-    : undefined;
+    : never;
 
 export type LexerToken<Rules extends LexerRulesBase> = {
   [T in keyof Rules]: {
@@ -145,15 +144,6 @@ const extractToken = (input: string, rules: Rule[], lHandler: LocationHandler): 
     : { type: bestMatch.rule.type, location };
 
   return [token, unprocessed];
-};
-
-
-export const stringifyToken = (token: TokenBase): string => {
-  if ('value' in token) {
-    return `${token.type}(${util.inspect(token.value)})`;
-  } else {
-    return token.type;
-  }
 };
 
 

@@ -10,11 +10,11 @@ type RemoveTypes<Token extends TokenBase, Ignored extends string> =
   Token extends unknown ? _RemoveTypes<Token, Ignored> : never;
 
 
-type _FilterModule<Token extends TokenBase = never, Filtered extends TokenBase = TokenBase> =
+type FilterModule<Token extends TokenBase = never, Filtered extends TokenBase = TokenBase> =
   Module<Iterator<Token, undefined>, Iterator<Filtered, undefined>>;
 
-export type FilterModuleToken<M extends _FilterModule> =
-  M extends _FilterModule<never, infer Filtered>
+export type FilterModuleToken<M extends FilterModule> =
+  M extends FilterModule<never, infer Filtered>
     ? Filtered
     : never;
 
@@ -24,11 +24,11 @@ type UnreifiedTokenFilterModule<Ignored extends string> = {
 }
 
 type GenericTokenFilterModule<Ignored extends string> = UnreifiedTokenFilterModule<Ignored> & {
-  reify: <Token extends TokenBase>() => Module<Iterator<Token, undefined>, Iterator<RemoveTypes<Token, Ignored>, undefined>>;
+  reify: <Token extends TokenBase>() => FilterModule<Token, RemoveTypes<Token, Ignored>>;
 }
 
 export type TokenFilterModule<Token extends TokenBase, Ignored extends string> =
-  Module<Iterator<Token, undefined>, Iterator<RemoveTypes<Token, Ignored>, undefined>>;
+  FilterModule<Token, RemoveTypes<Token, Ignored>>;
 
 
 export const createTokenFilter = <Ignored extends string>(ignoredTokens: Ignored[]): GenericTokenFilterModule<Ignored> => {

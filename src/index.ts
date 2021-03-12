@@ -4,7 +4,6 @@ import minimist from 'minimist';
 import fs from 'fs';
 import path from 'path';
 import { core } from './core';
-import { stringifyAST } from './utils/system/parser';
 
 const version = '0.0.0-development';
 const help =
@@ -45,5 +44,5 @@ if (flags.help || flags._.length !== 1) {
 
   const result = core.run(fileStr);
 
-  process.stdout.write(stringifyAST(result) + '\n');
+  process.stdout.write(result + '\n');
 }
