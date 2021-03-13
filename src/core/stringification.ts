@@ -9,8 +9,18 @@ const stringifyBranch = (process: Walk<AST.Node, string>, nodeType: string, chil
       .map((child, index) => indentChild(child, index === children.length - 1))
   );
 
-const stringifyLeaf = (node: Extract<AST.Node, { value: unknown }>) =>
-  `${node.type} :: ${node.value}`;
+type Stringable = string | number;
+
+interface StringifyLeaf {
+  <N extends Extract<AST.Node, { value: Stringable }>>(node: N): string;
+  <N extends Extract<AST.Node, { value: unknown }>>(node: N, transform: (v: N['value']) => Stringable): string;
+}
+
+const stringifyLeaf: StringifyLeaf = <N extends Extract<AST.Node, { value: unknown }>>(
+  node: N,
+  transform: (value: N['value']) => Stringable = (v => v as Stringable)
+) =>
+    `${node.type} :: ${transform(node.value)}`;
 
 
 const walkers: Walkers<AST.Node, string> = {
@@ -51,8 +61,9 @@ const walkers: Walkers<AST.Node, string> = {
     node.type,
     node.members,
   ),
-  'name': stringifyLeaf,
-  'number': stringifyLeaf,
+  'name': (node) => stringifyLeaf(node),
+  'number': (node) => stringifyLeaf(node),
+  'text': (node) => stringifyLeaf(node, v => `"${v}"`),
 };
 
 export const astStringifier = createWalkerModule(walkers);

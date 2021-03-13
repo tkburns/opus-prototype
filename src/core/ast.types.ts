@@ -8,7 +8,8 @@ export type Node = (
   Func |
   Tuple |
   Name |
-  Numeral
+  Numeral |
+  Text
 );
 
 
@@ -29,7 +30,8 @@ export type Expression = (
   Func |
   Tuple |
   Name |
-  Numeral
+  Numeral |
+  Text
 );
 
 export type FuncCall = {
@@ -59,4 +61,10 @@ export type Numeral = {
   type: 'number';
   value: number;
   token: TokenMap['number'];
+};
+
+export type Text = {
+  type: 'text';
+  value: string;
+  token: TokenMap['text'];
 };

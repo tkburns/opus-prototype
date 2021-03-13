@@ -1,6 +1,6 @@
-foo = 12
-bar = x => (x, 13)
+num = 12
+label = n => ("number", n)
 
-v = bar(foo)
+labeledNum = label(num)
 
-print(v)
+print(labeledNum)
