@@ -3,6 +3,8 @@ import { createTokenFilter, FilterModuleToken } from '&/utils/system/token-filte
 import type { MapByType } from '&/utils/helper.types';
 
 export const lexer = createLexer({
+  comment: /\(\*([^(]|\*(?!\)))*\*\)/,
+
   '(': '(',
   ')': ')',
 
@@ -24,6 +26,6 @@ export const lexer = createLexer({
 export type Token = LexerModuleToken<typeof lexer>;
 export type TokenMap = MapByType<Token>;
 
-export const tokenFilter = createTokenFilter(['space']).reify<Token>();
+export const tokenFilter = createTokenFilter(['space', 'comment']).reify<Token>();
 
 export type FilteredToken = FilterModuleToken<typeof tokenFilter>;

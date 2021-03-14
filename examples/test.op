@@ -1,6 +1,7 @@
 num = 12
 label = n => ("number", n)
 
+(* a comment *)
 labeledNum = label(num)
 
-print(labeledNum)
+print((* inline comment *)labeledNum)
