@@ -16,6 +16,7 @@ export const lexer = createLexer({
   '.': '.',
 
   name: [/[a-zA-Z][a-zA-Z0-9]*/, s => s],
+  atom: [/:[a-zA-Z]+/, s => s.slice(1)],
   number: [/[0-9]+/, s => parseInt(s, 10)],
   text: [/"[^"]*"/, s => s.slice(1, -1)],
 

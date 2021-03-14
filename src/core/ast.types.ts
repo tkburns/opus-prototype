@@ -8,6 +8,7 @@ export type Node = (
   Func |
   Tuple |
   Name |
+  Atom |
   Numeral |
   Text
 );
@@ -30,6 +31,7 @@ export type Expression = (
   Func |
   Tuple |
   Name |
+  Atom |
   Numeral |
   Text
 );
@@ -55,6 +57,12 @@ export type Name = {
   type: 'name';
   value: string;
   token: TokenMap['name'];
+};
+
+export type Atom = {
+  type: 'atom';
+  value: string;
+  token: TokenMap['atom'];
 };
 
 export type Numeral = {

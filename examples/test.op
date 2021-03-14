@@ -1,4 +1,5 @@
 num = 12
+atom = :thing
 label = n => ("number", n)
 
 (* a comment *)

@@ -62,6 +62,7 @@ const walkers: Walkers<AST.Node, string> = {
     node.members,
   ),
   'name': (node) => stringifyLeaf(node),
+  'atom': (node) => stringifyLeaf(node, v => `:${v}`),
   'number': (node) => stringifyLeaf(node),
   'text': (node) => stringifyLeaf(node, v => `"${v}"`),
 };
