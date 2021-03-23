@@ -45,7 +45,9 @@ const expressionRecSafe: RDParser<AST.Expression> = (handle) => {
     func,
     tuple,
     name,
+    atom,
     number,
+    text,
   ]);
 };
 
@@ -112,11 +114,31 @@ const name: RDParser<AST.Name> = (handle) => {
   };
 };
 
+const atom: RDParser<AST.Atom> = (handle) => {
+  const token = handle.consume('atom');
+
+  return {
+    type: 'atom',
+    value: token.value,
+    token
+  };
+};
+
 const number: RDParser<AST.Numeral> = (handle) => {
   const token = handle.consume('number');
 
   return {
     type: 'number',
+    value: token.value,
+    token
+  };
+};
+
+const text: RDParser<AST.Text> = (handle) => {
+  const token = handle.consume('text');
+
+  return {
+    type: 'text',
     value: token.value,
     token
   };

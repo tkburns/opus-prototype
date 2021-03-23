@@ -1,6 +1,8 @@
-foo = 12
-bar = x => (x, 13)
+num = 12
+atom = :thing
+label = n => ("number", n)
 
-v = bar(foo)
+(* a comment *)
+labeledNum = label(num)
 
-print(v)
+print((* inline comment *)labeledNum)
