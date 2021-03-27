@@ -21,7 +21,7 @@ const walkers: Walkers<AST.Node, string> = {
     `[${node.members.map(process).join(', ')}]`,
 
   'name': (node) => node.value,
-  'atom': (node) => `Symbol.for(${node.value})`,
+  'atom': (node) => `Symbol.for('${node.value}')`,
   'number': (node) => node.token.source,
   'text': (node) => `"${node.value}"`,
 };
