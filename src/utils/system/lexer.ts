@@ -20,6 +20,7 @@ type Location = {
 export type TokenBase = {
   type: string;
   value?: unknown;
+  source: string;
   location: Location;
 };
 
@@ -32,6 +33,7 @@ export type LexerToken<Rules extends LexerRulesBase> = {
   [T in keyof Rules]: {
     type: T;
     value: TokenValue<Rules[T]>;
+    source: string;
     location: Location;
   };
 }[keyof Rules];
@@ -139,9 +141,15 @@ const extractToken = (input: string, rules: Rule[], lHandler: LocationHandler): 
   const location = lHandler.accept(bestMatch.match);
   const unprocessed = input.slice(bestMatch.match.length);
 
+  const tokenBase = {
+    type: bestMatch.rule.type,
+    source: bestMatch.match,
+    location
+  };
+
   const token = bestMatch.rule.mapper
-    ? { type: bestMatch.rule.type, value: bestMatch.rule.mapper(bestMatch.match), location }
-    : { type: bestMatch.rule.type, location };
+    ? { ...tokenBase, value: bestMatch.rule.mapper(bestMatch.match) }
+    : tokenBase;
 
   return [token, unprocessed];
 };
