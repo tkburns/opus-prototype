@@ -10,6 +10,7 @@
     "start:pure": "node ./build/index.js",
     "start": "npm run build && npm run start:pure",
     "start:example": "npm start -- -- ./examples/test.op",
+    "start:run:example": "npm start --silent -- -- ./examples/test.op | node",
     "test": "jest --config ./test/jest.config.js",
     "test:coverage": "jest --config ./test/jest.config.js --coverage",
     "test:watch": "jest --config ./test/jest.config.js --watch",
