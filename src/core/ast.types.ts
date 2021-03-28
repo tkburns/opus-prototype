@@ -17,7 +17,7 @@ export type Node = (
 export type Program = {
   type: 'program';
   declarations: Declaration[];
-  topExpression: Expression;
+  expressions: Expression[];
 };
 
 export type Declaration = {

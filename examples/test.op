@@ -1,8 +1,8 @@
 num = 12
-atom = :thing
 label = n => ("number", n)
 
 (* a comment *)
 labeledNum = label(num)
 
 print((* inline comment *)labeledNum)
+print("thing")

@@ -6,7 +6,7 @@ type RDParser<Node extends ASTBase = ASTBase> = (handle: LexerHandle<FilteredTok
 
 const program: RDParser<AST.Program> = (handle) => {
   const declarations = repeated(handle, declaration);
-  const topExpression = expression(handle);
+  const expressions = repeated(handle, expression);
 
   if (!handle.atEOI()) {
     const token = handle.peek();
@@ -16,7 +16,7 @@ const program: RDParser<AST.Program> = (handle) => {
   return {
     type: 'program',
     declarations,
-    topExpression
+    expressions
   };
 };
 

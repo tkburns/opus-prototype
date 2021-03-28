@@ -7,7 +7,7 @@ const walkers: Walkers<AST.Node, string> = {
   'program': (node, process) => lines(
     ...node.declarations.map(process),
     '',
-    process(node.topExpression)
+    ...node.expressions.map(process),
   ),
 
   'declaration': (node, process) =>
