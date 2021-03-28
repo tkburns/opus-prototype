@@ -5,8 +5,9 @@ import type * as AST from './ast.types';
 type RDParser<Node extends ASTBase = ASTBase> = (handle: LexerHandle<FilteredToken>) => Node;
 
 const program: RDParser<AST.Program> = (handle) => {
-  const declarations = repeated(handle, declaration);
-  const expressions = repeated(handle, expression);
+  const entries = repeated(handle, () =>
+    oneOf(handle, [declaration, expression])
+  );
 
   if (!handle.atEOI()) {
     const token = handle.peek();
@@ -15,8 +16,7 @@ const program: RDParser<AST.Program> = (handle) => {
 
   return {
     type: 'program',
-    declarations,
-    expressions
+    entries
   };
 };
 

@@ -5,9 +5,9 @@ import type * as AST from './ast.types';
 
 const walkers: Walkers<AST.Node, string> = {
   'program': (node, process) => lines(
-    ...node.declarations.map(process),
-    '',
-    ...node.expressions.map(process),
+    ...node.entries
+      .map(process)
+      .flatMap(code => [code, '']),
   ),
 
   'declaration': (node, process) =>

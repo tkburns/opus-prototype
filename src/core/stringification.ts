@@ -27,10 +27,7 @@ const walkers: Walkers<AST.Node, string> = {
   'program': (node, process) => stringifyBranch(
     process,
     node.type,
-    [
-      ...node.declarations,
-      ...node.expressions,
-    ]
+    node.entries,
   ),
   'declaration': (node, process) => stringifyBranch(
     process,

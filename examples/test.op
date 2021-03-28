@@ -3,6 +3,7 @@ label = n => ("number", n)
 
 (* a comment *)
 labeledNum = label(num)
-
 print((* inline comment *)labeledNum)
-print("thing")
+
+atom = :thing
+print(atom)
