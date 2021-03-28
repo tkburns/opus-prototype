@@ -3,7 +3,7 @@ import { createTokenFilter, FilterModuleToken } from '&/utils/system/token-filte
 import type { MapByType } from '&/utils/helper.types';
 
 export const lexer = createLexer({
-  comment: /\(\*([^(]|\*(?!\)))*\*\)/,
+  comment: /\(\*([^*]|\*(?!\)))*\*\)/,
 
   '(': '(',
   ')': ')',
