@@ -61,7 +61,7 @@ const createLexerHandle = <T extends TokenBase>(iterator: Iterator<T, undefined>
     if (cache[current] == undefined) {
       const result = iterator.next();
       if (result.done) {
-        throw new Error('cannot get next token; EOI reached');
+        throw new ParseError([{ message: 'cannot get next token; EOI reached' }]);
       }
 
       cache = [...cache, result.value];
@@ -109,7 +109,7 @@ const createLexerHandle = <T extends TokenBase>(iterator: Iterator<T, undefined>
       const token = getNext();
 
       if (expected != null && token.type !== expected) {
-        throw new Error(`token mismatch as ${token.location.line}:${token.location.column}; expected ${expected}, but recieved ${token.type}`);
+        throw new ParseError([{ token, message: `token mismatch as ${token.location.line}:${token.location.column}; expected ${expected}, but recieved ${token.type}` }]);
       }
 
       current = current + 1;
@@ -120,7 +120,7 @@ const createLexerHandle = <T extends TokenBase>(iterator: Iterator<T, undefined>
     consumeEOI: () => {
       if (!atEOI()) {
         const token = getNext();
-        throw new Error(`expected EOI but recieved token ${token.type} (at ${token.location.line}:${token.location.column})`);
+        throw new ParseError([{ token, message: `expected EOI but recieved token ${token.type} (at ${token.location.line}:${token.location.column})` }]);
       }
     }
   };
@@ -135,26 +135,31 @@ export const oneOf = <T extends TokenBase, Ps extends RDParserish<T, unknown>[]>
   handle: LexerHandle<T>,
   parsers: Ps
 ): ReturnType<Ps[number]> => {
-  let errors: Error[] = [];
+  let errors: ParseError<T>[] = [];
 
   for (const parser of parsers) {
     handle.checkpoint();
     try {
       return parser(handle) as ReturnType<Ps[number]>;
-    } catch (e) {
-      errors = errors.concat(e);
+    } catch (e: unknown) {
       handle.backtrack();
+
+      if (e instanceof ParseError) {
+        errors = errors.concat(e as ParseError<T>);
+      } else {
+        throw e;
+      }
     } finally {
       handle.commit();
     }
   }
 
-  throw errors;
+  throw ParseError.from<T>(errors);
 };
 
 
 export const repeated = <T extends TokenBase, R>(handle: LexerHandle<T>, parser: RDParserish<T, R>): [R[], Error]  => {
-  let error: Error | undefined = undefined;
+  let error: ParseError<T> | undefined = undefined;
   handle.checkpoint();
 
   try {
@@ -162,8 +167,12 @@ export const repeated = <T extends TokenBase, R>(handle: LexerHandle<T>, parser:
     const [following, e] = repeated(handle, parser);
     return [[node, ...following], e];
   } catch (e) {
-    error = e as Error;
     handle.backtrack();
+    if (e instanceof ParseError) {
+      error = e as ParseError<T>;
+    } else {
+      throw e;
+    }
   } finally {
     handle.commit();
   }
@@ -179,11 +188,35 @@ export const optional = <T extends TokenBase, R>(handle: LexerHandle<T>, parser:
   try {
     return [parser(handle), undefined];
   } catch (e) {
-    error = e as Error;
     handle.backtrack();
+    if (e instanceof ParseError) {
+      error = e as ParseError<T>;
+    } else {
+      throw e;
+    }
   } finally {
     handle.commit();
   }
 
   return [undefined, error];
 };
+
+type RuleError<Token extends TokenBase> = {
+  token?: Token;
+  message: string;
+};
+
+export class ParseError<Token extends TokenBase> extends Error {
+  constructor(
+    readonly errors: RuleError<Token>[]
+  ) {
+    super(`Parse Error:\n  ${errors.map(e => e.message).join('\n  ')}`);
+  }
+
+  static from<T extends TokenBase>(errors: ParseError<T>[]): ParseError<T> {
+    const ruleErrors = errors.flatMap(e => e.errors)
+      .map(e => ({ token: e.token, message: e.message }));
+
+    return new ParseError<T>(ruleErrors);
+  }
+}
