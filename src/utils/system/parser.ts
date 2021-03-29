@@ -7,6 +7,9 @@ interface Consume<T extends TokenBase> {
   (t?: string): T;
 }
 
+const isErrorArray = (es: unknown): es is Error[] =>
+  Array.isArray(es) && es.every(error => error instanceof Error);
+
 export type LexerHandle<T extends TokenBase> = {
   checkpoint: () => void;
   backtrack: () => void;
@@ -15,6 +18,7 @@ export type LexerHandle<T extends TokenBase> = {
   consume: Consume<T>;
   peek: () => T;
   atEOI: () => boolean;
+  consumeEOI: () => void;
 };
 
 export type ASTBase = ASTNodeBase;
@@ -31,7 +35,17 @@ export const createRDParser = <T extends TokenBase, A extends ASTBase>(parse: RD
   return {
     run: (iterator) => {
       const handle = createLexerHandle(iterator);
-      return parse(handle);
+      try {
+        return parse(handle);
+      } catch (e: unknown) {
+        if (isErrorArray(e)) {
+          throw new Error(`Parse Error:\n  ${e.map(error => error.message).join('\n  ')}`);
+        } else if (e instanceof Error) {
+          throw new Error(`Parse Error: ${e.message}`);
+        } else {
+          throw e;
+        }
+      }
     }
   };
 };
@@ -54,6 +68,21 @@ const createLexerHandle = <T extends TokenBase>(iterator: Iterator<T, undefined>
       return result.value;
     } else {
       return cache[current];
+    }
+  };
+
+  const atEOI = () => {
+    // TODO - should EOI be a token..?
+    if (current < cache.length) {
+      return false;
+    } else {
+      const result = iterator.next();
+      if (result.done) {
+        return true;
+      } else {
+        cache = [...cache, result.value];
+        return false;
+      }
     }
   };
 
@@ -87,18 +116,11 @@ const createLexerHandle = <T extends TokenBase>(iterator: Iterator<T, undefined>
       return token as Matching<T, N>;
     },
     peek: () => getNext(),
-    atEOI: () => {
-      // TODO - should EOI be a token..?
-      if (current < cache.length) {
-        return false;
-      } else {
-        const result = iterator.next();
-        if (result.done) {
-          return true;
-        } else {
-          cache = [...cache, result.value];
-          return false;
-        }
+    atEOI,
+    consumeEOI: () => {
+      if (!atEOI()) {
+        const token = getNext();
+        throw new Error(`expected EOI but recieved token ${token.type} (at ${token.location.line}:${token.location.column})`);
       }
     }
   };
@@ -113,49 +135,55 @@ export const oneOf = <T extends TokenBase, Ps extends RDParserish<T, unknown>[]>
   handle: LexerHandle<T>,
   parsers: Ps
 ): ReturnType<Ps[number]> => {
+  let errors: Error[] = [];
 
   for (const parser of parsers) {
     handle.checkpoint();
     try {
       return parser(handle) as ReturnType<Ps[number]>;
-    } catch {
+    } catch (e) {
+      errors = errors.concat(e);
       handle.backtrack();
     } finally {
       handle.commit();
     }
   }
 
-  const token = handle.peek();
-  throw new Error(`token ${token.type} (at ${token.location.line}:${token.location.column}) could not be parsed`);
+  throw errors;
 };
 
 
-export const repeated = <T extends TokenBase, R>(handle: LexerHandle<T>, parser: RDParserish<T, R>): R[] => {
+export const repeated = <T extends TokenBase, R>(handle: LexerHandle<T>, parser: RDParserish<T, R>): [R[], Error]  => {
+  let error: Error | undefined = undefined;
   handle.checkpoint();
+
   try {
     const node = parser(handle);
-    const following = repeated(handle, parser);
-    return [node, ...following];
-  } catch {
+    const [following, e] = repeated(handle, parser);
+    return [[node, ...following], e];
+  } catch (e) {
+    error = e as Error;
     handle.backtrack();
   } finally {
     handle.commit();
   }
 
-  return [];
+  return [[], error];
 };
 
 
-export const optional = <T extends TokenBase, R>(handle: LexerHandle<T>, parser: RDParserish<T, R>): R | undefined => {
+export const optional = <T extends TokenBase, R>(handle: LexerHandle<T>, parser: RDParserish<T, R>): [R, undefined] | [undefined, Error] => {
+  let error: Error | undefined = undefined;
   handle.checkpoint();
 
   try {
-    return parser(handle);
+    return [parser(handle), undefined];
   } catch (e) {
+    error = e as Error;
     handle.backtrack();
   } finally {
     handle.commit();
   }
 
-  return undefined;
+  return [undefined, error];
 };
