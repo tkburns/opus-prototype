@@ -15,6 +15,12 @@ const walkers: Walkers<AST.Node, string> = {
 
   'function-application': (node, process) =>
     `${process(node.func)}(${process(node.arg)})`,
+
+  'match': () => { throw new Error('not implemented'); },
+  'match-clause': () => { throw new Error('not implemented'); },
+  'value-pattern': () => { throw new Error('not implemented'); },
+  'wildcard-pattern': () => { throw new Error('not implemented'); },
+
   'function': (node, process) =>
     `(${process(node.arg)}) => ${process(node.body)}`,
   'tuple': (node, process) =>

@@ -15,3 +15,10 @@ print atom;
 
 foo a b c;
 bar (baz x);
+
+name = a => a match (
+  :thing => "thing";
+  _ => "other";
+);
+
+print (name atom)
