@@ -62,9 +62,34 @@ const parenthesizedExpression: RDParser<AST.Expression> = (handle) => {
 
 const funcCall: RDParser<AST.FuncCall> = (handle) => {
   const func = expressionRecSafe(handle);
+
   handle.consume('(');
   const arg = expression(handle);
   handle.consume(')');
+
+  // make a repeated that requires one instance
+  const [additionalArgs] = repeated(handle, () => {
+    handle.consume('(');
+    const arg = expression(handle);
+    handle.consume(')');
+
+    return arg;
+  });
+
+  const firstCall: AST.FuncCall = {
+    type: 'function-call',
+    func,
+    arg,
+  };
+
+  additionalArgs.reduce(
+    (funcNode, nextArg) => ({
+      type: 'function-call',
+      func: funcNode,
+      arg: nextArg,
+    }),
+    firstCall
+  );
 
   return {
     type: 'function-call',
