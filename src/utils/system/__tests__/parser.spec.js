@@ -126,7 +126,7 @@ it('parses with repeatable rules', () => {
   const start = (handle) => {
     const nodeA = a(handle);
 
-    const nodeBs = repeated(handle, () => {
+    const [nodeBs] = repeated(handle, () => {
       handle.consume('.');
       return b(handle);
     });
@@ -176,7 +176,7 @@ it('parses with repeatable rules', () => {
 it('parses with optional rules', () => {
   const start = (handle) => {
     const nodeA = a(handle);
-    const nodeB = optional(handle, () => {
+    const [nodeB] = optional(handle, () => {
       handle.consume('.');
       return b(handle);
     });

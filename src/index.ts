@@ -40,9 +40,19 @@ if (flags.help || flags._.length !== 1) {
 } else {
   const [file] = flags._;
 
-  const fileStr = fs.readFileSync(path.resolve(file), 'utf-8');
+  try {
+    const fileStr = fs.readFileSync(path.resolve(file), 'utf-8');
 
-  const result = core.run(fileStr);
+    const result = core.run(fileStr);
 
-  process.stdout.write(result + '\n');
+    process.stdout.write(result + '\n');
+  } catch (e: unknown) {
+    if (!(e instanceof Error)) {
+      throw e;
+    }
+
+    process.stderr.write(`compilation for '${file}' failed\n\n`);
+    process.stderr.write(`[Error] ${e.name}: ${e.message}\n`);
+    process.exit(1);
+  }
 }

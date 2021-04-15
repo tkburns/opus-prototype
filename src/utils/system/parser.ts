@@ -7,9 +7,6 @@ interface Consume<T extends TokenBase> {
   (t?: string): T;
 }
 
-const isErrorArray = (es: unknown): es is Error[] =>
-  Array.isArray(es) && es.every(error => error instanceof Error);
-
 export type LexerHandle<T extends TokenBase> = {
   checkpoint: () => void;
   backtrack: () => void;
@@ -35,17 +32,7 @@ export const createRDParser = <T extends TokenBase, A extends ASTBase>(parse: RD
   return {
     run: (iterator) => {
       const handle = createLexerHandle(iterator);
-      try {
-        return parse(handle);
-      } catch (e: unknown) {
-        if (isErrorArray(e)) {
-          throw new Error(`Parse Error:\n  ${e.map(error => error.message).join('\n  ')}`);
-        } else if (e instanceof Error) {
-          throw new Error(`Parse Error: ${e.message}`);
-        } else {
-          throw e;
-        }
-      }
+      return parse(handle);
     }
   };
 };
@@ -61,7 +48,7 @@ const createLexerHandle = <T extends TokenBase>(iterator: Iterator<T, undefined>
     if (cache[current] == undefined) {
       const result = iterator.next();
       if (result.done) {
-        throw new Error('cannot get next token; EOI reached');
+        throw new UnexpectedEOI();
       }
 
       cache = [...cache, result.value];
@@ -109,7 +96,7 @@ const createLexerHandle = <T extends TokenBase>(iterator: Iterator<T, undefined>
       const token = getNext();
 
       if (expected != null && token.type !== expected) {
-        throw new Error(`token mismatch as ${token.location.line}:${token.location.column}; expected ${expected}, but recieved ${token.type}`);
+        throw new TokenMismatch(expected, token);
       }
 
       current = current + 1;
@@ -120,7 +107,7 @@ const createLexerHandle = <T extends TokenBase>(iterator: Iterator<T, undefined>
     consumeEOI: () => {
       if (!atEOI()) {
         const token = getNext();
-        throw new Error(`expected EOI but recieved token ${token.type} (at ${token.location.line}:${token.location.column})`);
+        throw new TokenMismatch('EOI', token);
       }
     }
   };
@@ -135,26 +122,31 @@ export const oneOf = <T extends TokenBase, Ps extends RDParserish<T, unknown>[]>
   handle: LexerHandle<T>,
   parsers: Ps
 ): ReturnType<Ps[number]> => {
-  let errors: Error[] = [];
+  let errors: ParseError[] = [];
 
   for (const parser of parsers) {
     handle.checkpoint();
     try {
       return parser(handle) as ReturnType<Ps[number]>;
-    } catch (e) {
-      errors = errors.concat(e);
+    } catch (e: unknown) {
       handle.backtrack();
+
+      if (isParseError(e)) {
+        errors = errors.concat(e);
+      } else {
+        throw e;
+      }
     } finally {
       handle.commit();
     }
   }
 
-  throw errors;
+  throw new CompositeParseError(errors);
 };
 
 
 export const repeated = <T extends TokenBase, R>(handle: LexerHandle<T>, parser: RDParserish<T, R>): [R[], Error]  => {
-  let error: Error | undefined = undefined;
+  let error: ParseError | undefined = undefined;
   handle.checkpoint();
 
   try {
@@ -162,8 +154,12 @@ export const repeated = <T extends TokenBase, R>(handle: LexerHandle<T>, parser:
     const [following, e] = repeated(handle, parser);
     return [[node, ...following], e];
   } catch (e) {
-    error = e as Error;
     handle.backtrack();
+    if (isParseError(e)) {
+      error = e;
+    } else {
+      throw e;
+    }
   } finally {
     handle.commit();
   }
@@ -179,11 +175,75 @@ export const optional = <T extends TokenBase, R>(handle: LexerHandle<T>, parser:
   try {
     return [parser(handle), undefined];
   } catch (e) {
-    error = e as Error;
     handle.backtrack();
+    if (isParseError(e)) {
+      error = e;
+    } else {
+      throw e;
+    }
   } finally {
     handle.commit();
   }
 
   return [undefined, error];
 };
+
+
+/* ----- errors ----- */
+
+export class TokenMismatch extends Error {
+  constructor(
+    readonly expected: string,
+    readonly token: TokenBase
+  ) {
+    super(`token mismatch as ${token.location.line}:${token.location.column}; expected ${expected}, but recieved ${token.type}`);
+    this.name = this.constructor.name;
+  }
+}
+
+export class UnexpectedEOI extends Error {
+  constructor(
+    readonly expected?: string,
+  ) {
+    super(`EOI reached unexpectedly${expected ? `; expected token ${expected}` : ''}`);
+    this.name = this.constructor.name;
+  }
+}
+
+const flattenErrors = (errors: ParseError[]): Exclude<ParseError, CompositeParseError>[] =>
+  errors.reduce((acc, error) =>
+    error instanceof CompositeParseError
+      ? [...acc, ...error.errors]
+      : [...acc, error],
+    [] as Exclude<ParseError, CompositeParseError>[]
+  );
+
+export class CompositeParseError extends Error {
+  readonly errors: Exclude<ParseError, CompositeParseError>[];
+
+  constructor(
+    errors: ParseError[]
+  ) {
+    const flattenedErrors = flattenErrors(errors);
+
+    super(CompositeParseError.createMessage(flattenedErrors));
+    this.name = this.constructor.name;
+
+    this.errors = flattenedErrors;
+  }
+
+  static createMessage(errors: Exclude<ParseError, CompositeParseError>[]): string {
+    const errorMessages = errors.map(e => `[${e.name}] ${e.message}`);
+    return `multiple parse errors:\n  ${errorMessages.join('\n  ')}`;
+  }
+}
+
+type ParseError =
+  TokenMismatch |
+  UnexpectedEOI |
+  CompositeParseError;
+
+const isParseError = (e: unknown): e is ParseError =>
+  e instanceof TokenMismatch ||
+  e instanceof UnexpectedEOI ||
+  e instanceof CompositeParseError;
