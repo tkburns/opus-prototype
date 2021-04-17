@@ -5,13 +5,14 @@ import type * as AST from './ast.types';
 type RDParser<Node extends ASTBase = ASTBase> = (handle: LexerHandle<FilteredToken>) => Node;
 
 const program: RDParser<AST.Program> = (handle) => {
-  const entries = repeated(handle, () =>
+  const [entries, error] = repeated(handle, () =>
     oneOf(handle, [declaration, expression])
   );
 
-  if (!handle.atEOI()) {
-    const token = handle.peek();
-    throw new Error(`failed to parse 'program'; expected EOI but recieved token ${token.type} (at ${token.location.line}:${token.location.column})`);
+  try {
+    handle.consumeEOI();
+  } catch {
+    throw error;
   }
 
   return {
@@ -87,7 +88,7 @@ const func: RDParser<AST.Func> = (handle) => {
 const tuple: RDParser<AST.Tuple> = (handle) => {
   handle.consume('(');
 
-  const members = repeated(handle, () => {
+  const [members] = repeated(handle, () => {
     const member = expression(handle);
     optional(handle, () => {
       handle.consume(',');

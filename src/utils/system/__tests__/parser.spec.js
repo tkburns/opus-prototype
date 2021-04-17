@@ -1,4 +1,4 @@
-import { createRDParser, oneOf, optional, repeated } from '../parser';
+import { CompositeParseError, createRDParser, oneOf, optional, repeated, TokenMismatch, UnexpectedEOI } from '../parser';
 
 const tokens = (words) => words
   .reduce(
@@ -34,179 +34,298 @@ const b = (handle) => {
   return { type: 'b', token };
 };
 
+const c = (handle) => {
+  const token = handle.consume('c');
+  return { type: 'c', token };
+};
 
-it('parses with rd parser', () => {
-  const start = (handle) => {
-    const nodeA = a(handle);
-    handle.consume('.');
-    const nodeB = b(handle);
+const d = (handle) => {
+  const token = handle.consume('d');
+  return { type: 'd', token };
+};
 
-    if (!handle.atEOI()) throw new Error('not at EOI');
 
-    return { type: 'start', children: [nodeA, nodeB] };
-  };
-
-  const parser = createRDParser(start);
-
-  const input = tokenIterator(['a', '.', 'b']);
-  const result = parser.run(input);
-
-  expect(result).toEqual({
-    type: 'start',
-    children: [
-      { type: 'a', token: input.tokens[0] },
-      { type: 'b', token: input.tokens[2] },
-    ]
-  });
-});
-
-it('throws errors on unparseable input', () => {
-  const start = (handle) => {
-    const nodeA = a(handle);
-    handle.consume('.');
-    const nodeB = b(handle);
-
-    if (!handle.atEOI()) throw new Error('not at EOI');
-
-    return { type: 'start', children: [nodeA, nodeB] };
-  };
-
-  const parser = createRDParser(start);
-
-  expect(() => {
-    parser.run(tokenIterator(['a', '.', 'wrong']));
-  }).toThrow();
-
-  expect(() => {
-    parser.run(tokenIterator(['a', '.']));
-  }).toThrow();
-
-  expect(() => {
-    parser.run(tokenIterator(['a', '.', 'b', '.']));
-  }).toThrow();
-});
-
-it('parses with multiple choices', () => {
-  const start = (handle) => {
-    const node1 = oneOf(handle, [a, b]);
-    handle.consume('.');
-    const node2 = oneOf(handle, [a, b]);
-
-    if (!handle.atEOI()) throw new Error('not at EOI');
-
-    return { type: 'start', children: [node1, node2] };
-  };
-
-  const parser = createRDParser(start);
-
-  const input1 = tokenIterator(['a', '.', 'b']);
-  const result1 = parser.run(input1);
-
-  expect(result1).toEqual({
-    type: 'start',
-    children: [
-      { type: 'a', token: input1.tokens[0] },
-      { type: 'b', token: input1.tokens[2] },
-    ]
-  });
-
-  const input2 = tokenIterator(['b', '.', 'a']);
-  const result2 = parser.run(input2);
-
-  expect(result2).toEqual({
-    type: 'start',
-    children: [
-      { type: 'b', token: input2.tokens[0] },
-      { type: 'a', token: input2.tokens[2] },
-    ]
-  });
-});
-
-it('parses with repeatable rules', () => {
-  const start = (handle) => {
-    const nodeA = a(handle);
-
-    const nodeBs = repeated(handle, () => {
+describe('parser', () => {
+  it('parses with rd parser', () => {
+    const start = (handle) => {
+      const nodeA = a(handle);
       handle.consume('.');
-      return b(handle);
+      const nodeB = b(handle);
+
+      handle.consumeEOI();
+
+      return { type: 'start', children: [nodeA, nodeB] };
+    };
+
+    const parser = createRDParser(start);
+
+    const input = tokenIterator(['a', '.', 'b']);
+    const result = parser.run(input);
+
+    expect(result).toEqual({
+      type: 'start',
+      children: [
+        { type: 'a', token: input.tokens[0] },
+        { type: 'b', token: input.tokens[2] },
+      ]
+    });
+  });
+
+  it('throws TokenMismatch errors', () => {
+    const start = (handle) => {
+      const nodeA = a(handle);
+      handle.consume('.');
+      const nodeB = b(handle);
+
+      handle.consumeEOI();
+
+      return { type: 'start', children: [nodeA, nodeB] };
+    };
+
+    const parser = createRDParser(start);
+
+    const input1 = tokenIterator(['a', '.', 'wrong']);
+    expect(() => {
+      parser.run(input1);
+    }).toThrow(new TokenMismatch('b', input1.tokens[2]));
+
+    const input2 = tokenIterator(['a', '.', 'b', '.']);
+    expect(() => {
+      parser.run(input2);
+    }).toThrow(new TokenMismatch('EOI', input2.tokens[3]));
+  });
+
+  it('throws UnexpectedEOI errors', () => {
+    const start = (handle) => {
+      const nodeA = a(handle);
+      handle.consume('.');
+      const nodeB = b(handle);
+
+      handle.consumeEOI();
+
+      return { type: 'start', children: [nodeA, nodeB] };
+    };
+
+    const parser = createRDParser(start);
+
+    expect(() => {
+      parser.run(tokenIterator(['a', '.']));
+    }).toThrow(new UnexpectedEOI());
+  });
+});
+
+describe('oneOf', () => {
+  it('parses with multiple choices', () => {
+    const start = (handle) => {
+      const node1 = oneOf(handle, [a, b]);
+      handle.consume('.');
+      const node2 = oneOf(handle, [a, b]);
+
+      handle.consumeEOI();
+
+      return { type: 'start', children: [node1, node2] };
+    };
+
+    const parser = createRDParser(start);
+
+    const input1 = tokenIterator(['a', '.', 'b']);
+    const result1 = parser.run(input1);
+
+    expect(result1).toEqual({
+      type: 'start',
+      children: [
+        { type: 'a', token: input1.tokens[0] },
+        { type: 'b', token: input1.tokens[2] },
+      ]
     });
 
-    if (!handle.atEOI()) throw new Error('not at EOI');
+    const input2 = tokenIterator(['b', '.', 'a']);
+    const result2 = parser.run(input2);
 
-    return { type: 'start', children: [nodeA, ...nodeBs] };
-  };
-
-  const parser = createRDParser(start);
-
-  const input1 = tokenIterator(['a']);
-  const result1 = parser.run(input1);
-
-  expect(result1).toEqual({
-    type: 'start',
-    children: [
-      { type: 'a', token: input1.tokens[0] },
-    ]
+    expect(result2).toEqual({
+      type: 'start',
+      children: [
+        { type: 'b', token: input2.tokens[0] },
+        { type: 'a', token: input2.tokens[2] },
+      ]
+    });
   });
 
-  const input2 = tokenIterator(['a', '.', 'b']);
-  const result2 = parser.run(input2);
+  it('collects errors from all branches if none match', () => {
+    const start = (handle) => {
+      const node = oneOf(handle, [
+        a,
+        () => {
+          const node = b(handle);
+          handle.consume('.');
+          return { type: '', node };
+        },
+        () => {
+          const first = oneOf(handle, [c, d]);
+          handle.consume('.');
+          const last = oneOf(handle, [a, b]);
 
-  expect(result2).toEqual({
-    type: 'start',
-    children: [
-      { type: 'a', token: input2.tokens[0] },
-      { type: 'b', token: input2.tokens[2] },
-    ]
-  });
+          return { type: 'c/d', first, last };
+        }
+      ]);
 
-  const input3 = tokenIterator(['a', '.', 'b', '.', 'b', '.', 'b']);
-  const result3 = parser.run(input3);
+      handle.consumeEOI();
 
-  expect(result3).toEqual({
-    type: 'start',
-    children: [
-      { type: 'a', token: input3.tokens[0] },
-      { type: 'b', token: input3.tokens[2] },
-      { type: 'b', token: input3.tokens[4] },
-      { type: 'b', token: input3.tokens[6] },
-    ]
+      return { type: 'start', node };
+    };
+
+    const parser = createRDParser(start);
+
+    const input = tokenIterator(['b', '?']);
+
+    expect(() => {
+      parser.run(input);
+    }).toThrow(new CompositeParseError([
+      new TokenMismatch('a', input.tokens[0]),
+      new TokenMismatch('.', input.tokens[1]),
+      new CompositeParseError([
+        new TokenMismatch('c', input.tokens[0]),
+        new TokenMismatch('d', input.tokens[0]),
+      ])
+    ]));
   });
 });
 
-it('parses with optional rules', () => {
-  const start = (handle) => {
-    const nodeA = a(handle);
-    const nodeB = optional(handle, () => {
-      handle.consume('.');
-      return b(handle);
+describe('repeated', () => {
+  it('parses with repeatable rules', () => {
+    const start = (handle) => {
+      const nodeA = a(handle);
+
+      const [nodeBs] = repeated(handle, () => {
+        handle.consume('.');
+        return b(handle);
+      });
+
+      handle.consumeEOI();
+
+      return { type: 'start', children: [nodeA, ...nodeBs] };
+    };
+
+    const parser = createRDParser(start);
+
+    const input1 = tokenIterator(['a']);
+    const result1 = parser.run(input1);
+
+    expect(result1).toEqual({
+      type: 'start',
+      children: [
+        { type: 'a', token: input1.tokens[0] },
+      ]
     });
 
-    if (!handle.atEOI()) throw new Error('not at EOI');
+    const input2 = tokenIterator(['a', '.', 'b']);
+    const result2 = parser.run(input2);
 
-    return { type: 'start', children: [nodeA, nodeB] };
-  };
+    expect(result2).toEqual({
+      type: 'start',
+      children: [
+        { type: 'a', token: input2.tokens[0] },
+        { type: 'b', token: input2.tokens[2] },
+      ]
+    });
 
-  const parser = createRDParser(start);
+    const input3 = tokenIterator(['a', '.', 'b', '.', 'b', '.', 'b']);
+    const result3 = parser.run(input3);
 
-  const input1 = tokenIterator(['a', '.', 'b']);
-  const result1 = parser.run(input1);
-
-  expect(result1).toEqual({
-    type: 'start',
-    children: [
-      { type: 'a', token: input1.tokens[0] },
-      { type: 'b', token: input1.tokens[2] },
-    ]
+    expect(result3).toEqual({
+      type: 'start',
+      children: [
+        { type: 'a', token: input3.tokens[0] },
+        { type: 'b', token: input3.tokens[2] },
+        { type: 'b', token: input3.tokens[4] },
+        { type: 'b', token: input3.tokens[6] },
+      ]
+    });
   });
 
-  const input2 = tokenIterator(['a']);
-  const result2 = parser.run(input2);
+  it('captures latest error on repeated rules', () => {
+    const start = (handle) => {
+      a(handle);
 
-  expect(result2).toEqual({
-    type: 'start',
-    children: [
-      { type: 'a', token: input2.tokens[0] },
-      undefined
-    ]
+      const [_nodeBs, latestError] = repeated(handle, () => {
+        handle.consume('.');
+        return b(handle);
+      });
+
+      return { type: 'error-capture', error: latestError };
+    };
+
+    const parser = createRDParser(start);
+
+    const input = tokenIterator(['a', '.', 'b']);
+    const result = parser.run(input);
+
+    expect(result).toEqual({
+      type: 'error-capture',
+      error: new UnexpectedEOI()
+    });
+  });
+
+});
+
+describe('optional', () => {
+  it('parses with optional rules', () => {
+    const start = (handle) => {
+      const nodeA = a(handle);
+      const [nodeB] = optional(handle, () => {
+        handle.consume('.');
+        return b(handle);
+      });
+
+      handle.consumeEOI();
+
+      return { type: 'start', children: [nodeA, nodeB] };
+    };
+
+    const parser = createRDParser(start);
+
+    const input1 = tokenIterator(['a', '.', 'b']);
+    const result1 = parser.run(input1);
+
+    expect(result1).toEqual({
+      type: 'start',
+      children: [
+        { type: 'a', token: input1.tokens[0] },
+        { type: 'b', token: input1.tokens[2] },
+      ]
+    });
+
+    const input2 = tokenIterator(['a']);
+    const result2 = parser.run(input2);
+
+    expect(result2).toEqual({
+      type: 'start',
+      children: [
+        { type: 'a', token: input2.tokens[0] },
+        undefined
+      ]
+    });
+  });
+
+  it('captures latest error on optional rules', () => {
+    const start = (handle) => {
+      a(handle);
+      const [_nodeB, latestError] = optional(handle, () => {
+        handle.consume('.');
+        return b(handle);
+      });
+
+      return { type: 'error-capture', error: latestError };
+    };
+
+    const parser = createRDParser(start);
+
+    const input = tokenIterator(['a', '.', 'c']);
+    const result = parser.run(input);
+
+    expect(result).toEqual({
+      type: 'error-capture',
+      error: new TokenMismatch('b', input.tokens[2])
+    });
   });
 });
