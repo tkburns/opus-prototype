@@ -189,6 +189,54 @@ describe('oneOf', () => {
       ])
     ]));
   });
+
+  it('handles left recursion', () => {
+    // ((a b) b) b
+    const word = (handle) => {
+      handle.recursionFlag('word');
+      const head = oneOf(handle, [word, a]);
+
+      const [bs, _] = repeated(handle, b);
+
+      return bs.reduce(
+        (prevHead, _nextB) => ({
+          type: 'word',
+          head: prevHead
+        }),
+        head
+      );
+    };
+
+    const start = (handle) => {
+      const node = word(handle);
+
+      handle.consumeEOI();
+
+      return { type: 'start', children: [node] };
+    };
+
+    const parser = createRDParser(start);
+
+    const input = tokenIterator(['a', 'b', 'b', 'b']);
+    const result = parser.run(input);
+
+    expect(result).toEqual({
+      type: 'start',
+      children: [{
+        type: 'word',
+        head: {
+          type: 'word',
+          head: {
+            type: 'word',
+            head: {
+              type: 'a',
+              token: input.tokens[0]
+            }
+          }
+        }
+      }]
+    });
+  });
 });
 
 describe('repeated', () => {
