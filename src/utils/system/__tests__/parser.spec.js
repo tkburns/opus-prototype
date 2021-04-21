@@ -237,6 +237,64 @@ describe('oneOf', () => {
       }]
     });
   });
+
+  it('includes the recursion flags when backtracking', () => {
+    /*
+      in the recursive rule (word) there is an option before the recursive option
+      in oneOf that consumes a token before it fails & backtracks
+    */
+
+    const ab = (handle) => {
+      const nodeA = a(handle);
+      const nodeB = b(handle);
+      return {
+        type: 'ab',
+        a: nodeA,
+        b: nodeB
+      };
+    };
+
+    const word = (handle) => {
+      handle.recursionFlag('word');
+      const head = oneOf(handle, [ab, word, a]);
+
+      const tail = c(handle);
+
+      return {
+        type: 'word',
+        head,
+        tail
+      };
+    };
+
+    const start = (handle) => {
+      const node = word(handle);
+
+      handle.consumeEOI();
+
+      return { type: 'start', children: [node] };
+    };
+
+    const parser = createRDParser(start);
+
+    const input = tokenIterator(['a', 'c']);
+    const result = parser.run(input);
+
+    expect(result).toEqual({
+      type: 'start',
+      children: [{
+        type: 'word',
+        head: {
+          type: 'a',
+          token: input.tokens[0]
+        },
+        tail: {
+          type: 'c',
+          token: input.tokens[1]
+        }
+      }]
+    });
+  });
 });
 
 describe('repeated', () => {

@@ -39,13 +39,15 @@ export const createRDParser = <T extends TokenBase, A extends ASTBase>(parse: RD
   };
 };
 
+type Checkpoint = { current: number; recFlags: unknown[] };
+
 const createLexerHandle = <T extends TokenBase>(iterator: Iterator<T, undefined>):
   LexerHandle<T> =>
 {
   let cache: T[] = [];
   let current = 0;
-  let checkpoints: number[] = [];
   let recFlags: unknown[] = [];
+  let checkpoints: Checkpoint[] = [];
 
   const getNext = (): T => {
     if (cache[current] == undefined) {
@@ -78,14 +80,16 @@ const createLexerHandle = <T extends TokenBase>(iterator: Iterator<T, undefined>
 
   return {
     checkpoint: () => {
-      checkpoints = [...checkpoints, current];
+      checkpoints = [...checkpoints, { current, recFlags }];
     },
     backtrack: () => {
       if (checkpoints.length === 0) {
         throw new Error('unable to rewind lexer handle; there are no saved checkpoints');
       }
 
-      current = checkpoints[checkpoints.length - 1];
+      const checkpoint = checkpoints[checkpoints.length - 1];
+      current = checkpoint.current;
+      recFlags = checkpoint.recFlags;
     },
     commit: () => {
       if (checkpoints.length === 0) {
