@@ -7,3 +7,6 @@ print((* inline comment *)labeledNum)
 
 atom = :thing
 print(atom)
+
+foo(a)(b)(c)
+bar(baz(x))
