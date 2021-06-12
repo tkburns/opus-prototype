@@ -1,12 +1,12 @@
-import { createRDParser, LexerHandle, ASTBase, repeated, oneOf, optional } from '&/utils/system/parser';
+import { createRDParser, LexerHandle, repeated, optional, choice } from '&/utils/system/parser';
 import { FilteredToken } from './lexer';
 import type * as AST from './ast.types';
 
-type RDParser<Node extends ASTBase = ASTBase> = (handle: LexerHandle<FilteredToken>) => Node;
+type RDParser<Node> = (handle: LexerHandle<FilteredToken>) => Node;
 
 const program: RDParser<AST.Program> = (handle) => {
   const [entries, error] = repeated(handle, () =>
-    oneOf(handle, [declaration, expression])
+    choice(handle, [declaration, expression])
   );
 
   try {
@@ -34,7 +34,7 @@ const declaration: RDParser<AST.Declaration> = (handle) => {
 };
 
 const expression: RDParser<AST.Expression> = (handle) => {
-  return oneOf(handle, [
+  return choice(handle, [
     parenthesizedExpression,
     funcCall,
     func,
@@ -54,9 +54,8 @@ const parenthesizedExpression: RDParser<AST.Expression> = (handle) => {
   return expr;
 };
 
+// TODO - unrestrained left recursion
 const funcCall: RDParser<AST.FuncCall> = (handle) => {
-  handle.recursionFlag('func-call');
-
   const func = expression(handle);
 
   // require at least one instance
