@@ -39,7 +39,7 @@ const createInputHandle = <T extends TokenBase>(iterator: Iterator<T, undefined>
 
 // TODO - join with input handle?
 
-type Mark = { position: number };
+export type Mark = { position: number };
 export type PositionHandle = {
   current: () => number;
   advance: () => void;

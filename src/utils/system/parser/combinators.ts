@@ -1,5 +1,5 @@
 import { TokenBase } from '../lexer';
-import { CompositeParseError, isParseError, ParseError, UnrestrainedLeftRecursion } from './errors';
+import { CompositeParseError, isParseError, LRecError, ParseError } from './errors';
 import { LexerHandle } from './handles';
 
 
@@ -32,7 +32,7 @@ export const choice = <T extends TokenBase, Ps extends RDParser<T, unknown>[]>(
     try {
       return attempt(handle, parser) as ReturnType<Ps[number]>;
     } catch (e: unknown) {
-      if (e instanceof UnrestrainedLeftRecursion) {
+      if (e instanceof LRecError) {
         /* swallow error & move onto next option */
       } else if (isParseError(e)) {
         errors = errors.concat(e);
