@@ -1,7 +1,69 @@
 import { a, b, c, d, tokenIterator } from './common';
 import { createRDParser } from '../index';
-import { choice, optional, repeated } from '../combinators';
+import { attempt, choice, optional, repeated } from '../combinators';
 import { CompositeParseError, TokenMismatch, UnexpectedEOI } from '../errors';
+
+describe('attempt', () => {
+  const start = (handle) => {
+    let node;
+    try {
+      node = attempt(handle, aa);
+    } catch (e) {
+      node = attempt(handle, ab);
+    }
+
+    handle.consumeEOI();
+
+    return { type: 'start', children: [node] };
+  };
+
+  const aa = (handle) => {
+    const token1 = a(handle);
+    const token2 = a(handle);
+    return { type: 'aa', tokens: [token1, token2] };
+  };
+
+  const ab = (handle) => {
+    const token1 = a(handle);
+    const token2 = b(handle);
+    return { type: 'ab', tokens: [token1, token2] };
+  };
+
+  it('returns parser result', () => {
+    const parser = createRDParser(start);
+
+    const input1 = tokenIterator(['a', 'a']);
+    const result1 = parser.run(input1);
+
+    expect(result1).toEqual({
+      type: 'start',
+      children: [
+        { type: 'aa', tokens: [
+          { type: 'a', token: input1.tokens[0] },
+          { type: 'a', token: input1.tokens[1] },
+        ] }
+      ]
+    });
+  });
+
+  it('backtracks & rethrows error on failure', () => {
+
+    const parser = createRDParser(start);
+
+    const input1 = tokenIterator(['a', 'b']);
+    const result1 = parser.run(input1);
+
+    expect(result1).toEqual({
+      type: 'start',
+      children: [
+        { type: 'ab', tokens: [
+          { type: 'a', token: input1.tokens[0] },
+          { type: 'b', token: input1.tokens[1] },
+        ] }
+      ]
+    });
+  });
+});
 
 describe('choice', () => {
   it('parses with multiple choices', () => {
