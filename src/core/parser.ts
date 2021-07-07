@@ -34,7 +34,7 @@ const declaration: RDParser<AST.Declaration> = (handle) => {
   };
 };
 
-const expression: RDParser<AST.Expression> = lrec('expression', (handle) => {
+const expression: RDParser<AST.Expression> = (handle) => {
   return choice(handle, [
     parenthesizedExpression,
     funcCall,
@@ -45,7 +45,7 @@ const expression: RDParser<AST.Expression> = lrec('expression', (handle) => {
     number,
     text,
   ]);
-});
+};
 
 const parenthesizedExpression: RDParser<AST.Expression> = (handle) => {
   handle.consume('(');
@@ -55,7 +55,7 @@ const parenthesizedExpression: RDParser<AST.Expression> = (handle) => {
   return expr;
 };
 
-const funcCall: RDParser<AST.FuncCall> = (handle) => {
+const funcCall: RDParser<AST.FuncCall> = lrec('func-call', (handle) => {
   const func = expression(handle);
 
   // require at least one instance
@@ -85,7 +85,7 @@ const funcCall: RDParser<AST.FuncCall> = (handle) => {
     }),
     firstCall
   );
-};
+});
 
 const func: RDParser<AST.Func> = (handle) => {
   const arg = name(handle);

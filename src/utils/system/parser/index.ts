@@ -1,6 +1,6 @@
 import { TokenBase } from '../lexer';
 import { Module } from '../system';
-import { createBacktrackingHandle, createConsumeHandle, LexerHandle } from './handles';
+import { createConsumeHandle, LexerHandle } from './handles';
 
 export type { LexerHandle };
 export * from './errors';
@@ -14,10 +14,9 @@ export const createRDParser = <T extends TokenBase, R>(parse: RDParser<T, R>):
 {
   return {
     run: (iterator) => {
-      const cHandle = createConsumeHandle(iterator);
-      const btHandle = createBacktrackingHandle(cHandle);
+      const handle = createConsumeHandle(iterator);
 
-      return parse(btHandle);
+      return parse(handle);
     }
   };
 };

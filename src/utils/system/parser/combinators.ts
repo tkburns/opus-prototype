@@ -10,14 +10,12 @@ export const attempt = <T extends TokenBase, P extends RDParser<T, unknown>>(
   handle: LexerHandle<T>,
   parser: P
 ): ReturnType<P> => {
-  handle.checkpoint();
+  const mark = handle.mark();
   try {
     return parser(handle) as ReturnType<P>;
   } catch (e: unknown) {
-    handle.backtrack();
+    handle.reset(mark);
     throw e;
-  } finally {
-    handle.commit();
   }
 };
 
