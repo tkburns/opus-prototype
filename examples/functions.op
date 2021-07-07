@@ -1,0 +1,16 @@
+(* declaration/lambda *)
+label = n => ("number", n)
+
+(* multiple args *)
+group = a => b => (a, b)
+
+(* application *)
+label(10)
+
+(* sequential application *)
+bar(baz(x))
+
+(* multiple args *)
+foo(a)(b)(c)
+
+group(label(1))(label(2))

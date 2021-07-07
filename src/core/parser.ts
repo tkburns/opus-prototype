@@ -1,6 +1,7 @@
 import { createRDParser, LexerHandle, repeated, optional, choice } from '&/utils/system/parser';
 import { FilteredToken } from './lexer';
 import type * as AST from './ast.types';
+import { lrec } from '&/utils/system/parser/lrec';
 
 type RDParser<Node> = (handle: LexerHandle<FilteredToken>) => Node;
 
@@ -33,7 +34,7 @@ const declaration: RDParser<AST.Declaration> = (handle) => {
   };
 };
 
-const expression: RDParser<AST.Expression> = (handle) => {
+const expression: RDParser<AST.Expression> = lrec('expression', (handle) => {
   return choice(handle, [
     parenthesizedExpression,
     funcCall,
@@ -44,7 +45,7 @@ const expression: RDParser<AST.Expression> = (handle) => {
     number,
     text,
   ]);
-};
+});
 
 const parenthesizedExpression: RDParser<AST.Expression> = (handle) => {
   handle.consume('(');
@@ -54,7 +55,6 @@ const parenthesizedExpression: RDParser<AST.Expression> = (handle) => {
   return expr;
 };
 
-// TODO - unrestrained left recursion
 const funcCall: RDParser<AST.FuncCall> = (handle) => {
   const func = expression(handle);
 

@@ -141,12 +141,12 @@ export const createAccLRecHandle =
     };
   };
 
-type RDParser<T extends TokenBase, R> = (handle: ConsumeHandle<T>) => R;
+type RDParser<T extends TokenBase, R, H extends ConsumeHandle<T>> = (handle: H) => R;
 
-export const lrec = <T extends TokenBase, R>(name: string, parser: RDParser<T, R>): RDParser<T, R> => {
+export const lrec = <T extends TokenBase, R, H extends ConsumeHandle<T>>(name: string, parser: RDParser<T, R, H>): RDParser<T, R, H> => {
   // const name = Symbol('left recursion root');
 
-  return (handle: ConsumeHandle<T>) => {
+  return (handle: H) => {
     // add a handle.hasSavedLRecNode(name)
     if (isLRecHandle(handle)) {
       const saved = handle.getSavedLRecNode(name) as R;
