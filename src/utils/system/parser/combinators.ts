@@ -1,5 +1,5 @@
 import { TokenBase } from '../lexer';
-import { CompositeParseError, isParseError, LRecError, ParseError } from './errors';
+import { CompositeParseError, ParseError } from './errors';
 import { LexerHandle } from './handles';
 
 
@@ -30,9 +30,7 @@ export const choice = <T extends TokenBase, Ps extends RDParser<T, unknown>[]>(
     try {
       return attempt(handle, parser) as ReturnType<Ps[number]>;
     } catch (e: unknown) {
-      if (e instanceof LRecError) {
-        /* swallow error & move onto next option */
-      } else if (isParseError(e)) {
+      if (e instanceof ParseError) {
         errors = errors.concat(e);
       } else {
         throw e;
@@ -52,7 +50,7 @@ export const repeated = <T extends TokenBase, R>(handle: LexerHandle<T>, parser:
     const [following, e] = repeated(handle, parser);
     return [[node, ...following], e];
   } catch (e) {
-    if (isParseError(e)) {
+    if (e instanceof ParseError) {
       error = e;
     } else {
       throw e;
@@ -69,7 +67,7 @@ export const optional = <T extends TokenBase, R>(handle: LexerHandle<T>, parser:
   try {
     return [attempt(handle, parser), undefined];
   } catch (e) {
-    if (isParseError(e)) {
+    if (e instanceof ParseError) {
       error = e;
     } else {
       throw e;

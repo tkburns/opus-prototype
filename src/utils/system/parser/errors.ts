@@ -1,6 +1,8 @@
 import { TokenBase } from '../lexer';
 
-export class LRecError extends Error {}
+export class ParseError extends Error {}
+
+export class LRecError extends ParseError {}
 
 export class UnrestrainedLeftRecursion extends LRecError {
   constructor(
@@ -19,7 +21,17 @@ export class ConsumeBeforeLRec extends LRecError {
   }
 }
 
-export class TokenMismatch extends Error {
+export class RecMismatch extends LRecError {
+  constructor(
+    readonly currentRec: unknown,
+    readonly attemptedRec: unknown
+  ) {
+    super('rec mismatch');
+  }
+}
+
+
+export class TokenMismatch extends ParseError {
   constructor(
     readonly expected: string,
     readonly token: TokenBase
@@ -29,7 +41,7 @@ export class TokenMismatch extends Error {
   }
 }
 
-export class UnexpectedEOI extends Error {
+export class UnexpectedEOI extends ParseError {
   constructor(
     readonly expected?: string,
   ) {
@@ -46,7 +58,7 @@ const flattenErrors = (errors: ParseError[]): Exclude<ParseError, CompositeParse
     [] as Exclude<ParseError, CompositeParseError>[]
   );
 
-export class CompositeParseError extends Error {
+export class CompositeParseError extends ParseError {
   readonly errors: Exclude<ParseError, CompositeParseError>[];
 
   constructor(
@@ -65,17 +77,3 @@ export class CompositeParseError extends Error {
     return `multiple parse errors:\n  ${errorMessages.join('\n  ')}`;
   }
 }
-
-export type ParseError =
-  TokenMismatch |
-  UnexpectedEOI |
-  CompositeParseError |
-  UnrestrainedLeftRecursion |
-  ConsumeBeforeLRec;
-
-export const isParseError = (e: unknown): e is ParseError =>
-  e instanceof TokenMismatch ||
-  e instanceof UnexpectedEOI ||
-  e instanceof CompositeParseError ||
-  e instanceof UnrestrainedLeftRecursion ||
-  e instanceof ConsumeBeforeLRec;
