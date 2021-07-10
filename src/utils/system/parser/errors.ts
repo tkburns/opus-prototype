@@ -6,27 +6,27 @@ export class LRecError extends ParseError {}
 
 export class UnrestrainedLeftRecursion extends LRecError {
   constructor(
-    readonly recName: unknown
+    readonly recName: string
   ) {
-    super('Unrestrained left recursion in parser');
+    super(`Unrestrained left recursion in parser for ${recName}`);
   }
 }
 
 export class ConsumeBeforeLRec extends LRecError {
   constructor(
-    readonly recName: unknown,
+    readonly recName: string,
     readonly expected?: string,
   ) {
-    super('Unrestrained left recursion in parser');
+    super(`attempted to consume ${expected ?? 'any'} before recursing ${recName}`);
   }
 }
 
 export class RecMismatch extends LRecError {
   constructor(
-    readonly currentRec: unknown,
-    readonly attemptedRec: unknown
+    readonly currentRec: string,
+    readonly attemptedRec: string
   ) {
-    super('rec mismatch');
+    super(`currently accumulating ${currentRec}, not ${attemptedRec}`);
   }
 }
 

@@ -2,36 +2,26 @@ import { TokenBase } from '../lexer';
 import { ConsumeBeforeLRec, LRecError, UnrestrainedLeftRecursion } from './errors';
 import { ConsumeHandle, Mark } from './handles';
 
-export type LRecHandle<Name, Node, Handle extends ConsumeHandle<TokenBase>> = Handle & {
-  getLRecState: (name: Name) => 'base' | 'acc' | null;
-  getSavedLRecNode: (name: Name) => Node;
-  debugSavedLRecNode: (name: Name) => Node;
+export type LRecHandle<Handle extends ConsumeHandle<TokenBase>> = Handle & {
+  getLRecState: (name: string) => 'base' | 'acc' | null;
+  getSavedLRecNode: (n: string) => unknown;
 }
 
 type HandleToken<H extends ConsumeHandle<TokenBase>> =
   H extends ConsumeHandle<infer T> ? T : never;
 
-const isLRecHandle = <Name, Node, Handle extends ConsumeHandle<TokenBase>>(
-  handle: LRecHandle<Name, Node, Handle> | Handle
-): handle is LRecHandle<Name, Node, Handle> =>
-    'getSavedLRecNode' in handle;
-
-
-type GetSavedLRecNode<Name, Node, Handle> =
-  (n: Name) => Node &
-  (
-    Handle extends LRecHandle<infer Name2, infer Node2, infer Handle2>
-      ? GetSavedLRecNode<Name2, Node2, Handle2>
-      : undefined
-  );
+const isLRecHandle = (
+  handle: ConsumeHandle<TokenBase>
+): handle is LRecHandle<ConsumeHandle<TokenBase>> =>
+  'getSavedLRecNode' in handle;
 
 export const createBaseLRecHandle =
-  <Name, Handle extends ConsumeHandle<TokenBase>>(name: Name, handle: Handle):
-    LRecHandle<Name, never, Handle> =>
+  <Name extends string, Handle extends ConsumeHandle<TokenBase>>(name: Name, handle: Handle):
+    LRecHandle<Handle> =>
   {
     const start = handle.mark();
 
-    const getLRecState = (n: unknown) => {
+    const getLRecState = (n: string) => {
       if (n === name) {
         return 'base';
       } else if (isLRecHandle(handle)) {
@@ -41,7 +31,7 @@ export const createBaseLRecHandle =
       }
     };
 
-    const getSavedLRecNode = (n: unknown) => {
+    const getSavedLRecNode = (n: string) => {
       const current = handle.mark();
 
       if (start.position === current.position && n === name) {
@@ -53,21 +43,10 @@ export const createBaseLRecHandle =
       }
     };
 
-    const debugSavedLRecNode = (n: unknown) => {
-      if (n === name) {
-        return undefined;
-      } else if (isLRecHandle(handle)) {
-        return handle.debugSavedLRecNode(n);
-      } else {
-        return undefined;
-      }
-    };
-
     return {
       ...handle,
       getLRecState,
-      getSavedLRecNode: getSavedLRecNode as GetSavedLRecNode<Name, never, Handle>,
-      debugSavedLRecNode: debugSavedLRecNode as GetSavedLRecNode<Name, never, Handle>
+      getSavedLRecNode: getSavedLRecNode as (n: string) => never
     };
   };
 
@@ -76,12 +55,12 @@ type Prev<Node> = {
   endMark: Mark;
 };
 export const createAccLRecHandle =
-  <Name, Node, Handle extends ConsumeHandle<TokenBase>>(name: Name, prev: Prev<Node>, handle: Handle):
-    LRecHandle<Name, Node, Handle> =>
+  <Name extends string, Node, Handle extends ConsumeHandle<TokenBase>>(name: Name, prev: Prev<Node>, handle: Handle):
+    LRecHandle<Handle> =>
   {
     const start = handle.mark();
 
-    const getLRecState = (n: unknown) => {
+    const getLRecState = (n: string) => {
       if (n === name) {
         return 'acc';
       } else if (isLRecHandle(handle)) {
@@ -91,7 +70,7 @@ export const createAccLRecHandle =
       }
     };
 
-    const getSavedLRecNode = (n: unknown) => {
+    const getSavedLRecNode = (n: string) => {
       const current = handle.mark();
 
       if (start.position === current.position) {
@@ -122,32 +101,19 @@ export const createAccLRecHandle =
       return handle.consume(expected) as ReturnType<Handle['consume']>;
     };
 
-    const debugSavedLRecNode = (n: unknown) => {
-      if (n === name) {
-        return prev.node;
-      } else if (isLRecHandle(handle)) {
-        return handle.debugSavedLRecNode(n);
-      } else {
-        return undefined;
-      }
-    };
-
     return {
       ...handle,
       getLRecState,
       consume,
-      getSavedLRecNode: getSavedLRecNode as GetSavedLRecNode<Name, never, Handle>,
-      debugSavedLRecNode: debugSavedLRecNode as GetSavedLRecNode<Name, never, Handle>
+      getSavedLRecNode: getSavedLRecNode as (n: string) => never,
     };
   };
 
 type RDParser<T extends TokenBase, R, H extends ConsumeHandle<T>> = (handle: H) => R;
 
-export const lrec = <T extends TokenBase, R, H extends ConsumeHandle<T>>(name: string, parser: RDParser<T, R, H>): RDParser<T, R, H> => {
-  // const name = Symbol('left recursion root');
-
-  return (handle: H) => {
-    // add a handle.hasSavedLRecNode(name)
+export const lrec = <T extends TokenBase, R, H extends ConsumeHandle<T>>(name: string, parser: RDParser<T, R, H>): RDParser<T, R, H> =>
+  (handle: H) => {
+    // add a handle.hasSavedLRecNode(name) ?
     if (isLRecHandle(handle)) {
       const saved = handle.getSavedLRecNode(name) as R;
       if (saved) {
@@ -178,4 +144,3 @@ export const lrec = <T extends TokenBase, R, H extends ConsumeHandle<T>>(name: s
     handle.reset(prev.endMark);
     return prev.node;
   };
-};
