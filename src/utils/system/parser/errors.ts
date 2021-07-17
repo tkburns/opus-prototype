@@ -1,6 +1,11 @@
 import { TokenBase } from '../lexer';
 
-export class ParseError extends Error {}
+export class ParseError extends Error {
+  constructor(msg: string) {
+    super(msg);
+    this.name = this.constructor.name;
+  }
+}
 
 export class LRecError extends ParseError {}
 
