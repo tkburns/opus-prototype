@@ -108,6 +108,13 @@ module.exports = {
       rules: {
         '@typescript-eslint/no-empty-function': 'off',
 
+        '@typescript-eslint/ban-types': ['error', {
+          extendDefaults: true,
+          types: {
+            object: false
+          }
+        }],
+
         '@typescript-eslint/array-type': ['warn', { default: 'array' }],
         '@typescript-eslint/member-delimiter-style': 'warn',
 
