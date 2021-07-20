@@ -1,125 +1,76 @@
-import { CompositeParseError, createRDParser, oneOf, optional, repeated, TokenMismatch, UnexpectedEOI } from '../parser';
+import { a, b, c, d, tokenIterator } from './common';
+import { createRDParser } from '../index';
+import { attempt, choice, optional, repeated } from '../combinators';
+import { CompositeParseError, TokenMismatch, UnexpectedEOI } from '../errors';
 
-const tokens = (words) => words
-  .reduce(
-    ({ list, nextLoc: loc }, text) => {
-      const token = { type: text, location: loc };
-      const nextColumn = loc.column + text.length + 1;
+describe('attempt', () => {
+  const start = (handle) => {
+    let node;
+    try {
+      node = attempt(handle, aa);
+    } catch (e) {
+      node = attempt(handle, ab);
+    }
 
-      return ({
-        list: [...list, token],
-        nextLoc: nextColumn > 20
-          ? { line: loc.line + 1, column: 1 }
-          : { line: loc.line, column: nextColumn }
-      });
-    },
-    { list: [], nextLoc: { line: 1, column: 1 } }
-  ).list;
+    handle.consumeEOI();
 
-const tokenIterator = (words) => {
-  const tokenList = tokens(words);
-  const iterator = tokenList[Symbol.iterator]();
-  iterator.tokens = tokenList;
-  return iterator;
-};
+    return { type: 'start', children: [node] };
+  };
 
+  const aa = (handle) => {
+    const token1 = a(handle);
+    const token2 = a(handle);
+    return { type: 'aa', tokens: [token1, token2] };
+  };
 
-const a = (handle) => {
-  const token = handle.consume('a');
-  return { type: 'a', token };
-};
+  const ab = (handle) => {
+    const token1 = a(handle);
+    const token2 = b(handle);
+    return { type: 'ab', tokens: [token1, token2] };
+  };
 
-const b = (handle) => {
-  const token = handle.consume('b');
-  return { type: 'b', token };
-};
-
-const c = (handle) => {
-  const token = handle.consume('c');
-  return { type: 'c', token };
-};
-
-const d = (handle) => {
-  const token = handle.consume('d');
-  return { type: 'd', token };
-};
-
-
-describe('parser', () => {
-  it('parses with rd parser', () => {
-    const start = (handle) => {
-      const nodeA = a(handle);
-      handle.consume('.');
-      const nodeB = b(handle);
-
-      handle.consumeEOI();
-
-      return { type: 'start', children: [nodeA, nodeB] };
-    };
-
+  it('returns parser result', () => {
     const parser = createRDParser(start);
 
-    const input = tokenIterator(['a', '.', 'b']);
-    const result = parser.run(input);
+    const input1 = tokenIterator(['a', 'a']);
+    const result1 = parser.run(input1);
 
-    expect(result).toEqual({
+    expect(result1).toEqual({
       type: 'start',
       children: [
-        { type: 'a', token: input.tokens[0] },
-        { type: 'b', token: input.tokens[2] },
+        { type: 'aa', tokens: [
+          { type: 'a', token: input1.tokens[0] },
+          { type: 'a', token: input1.tokens[1] },
+        ] }
       ]
     });
   });
 
-  it('throws TokenMismatch errors', () => {
-    const start = (handle) => {
-      const nodeA = a(handle);
-      handle.consume('.');
-      const nodeB = b(handle);
-
-      handle.consumeEOI();
-
-      return { type: 'start', children: [nodeA, nodeB] };
-    };
+  it('backtracks & rethrows error on failure', () => {
 
     const parser = createRDParser(start);
 
-    const input1 = tokenIterator(['a', '.', 'wrong']);
-    expect(() => {
-      parser.run(input1);
-    }).toThrow(new TokenMismatch('b', input1.tokens[2]));
+    const input1 = tokenIterator(['a', 'b']);
+    const result1 = parser.run(input1);
 
-    const input2 = tokenIterator(['a', '.', 'b', '.']);
-    expect(() => {
-      parser.run(input2);
-    }).toThrow(new TokenMismatch('EOI', input2.tokens[3]));
-  });
-
-  it('throws UnexpectedEOI errors', () => {
-    const start = (handle) => {
-      const nodeA = a(handle);
-      handle.consume('.');
-      const nodeB = b(handle);
-
-      handle.consumeEOI();
-
-      return { type: 'start', children: [nodeA, nodeB] };
-    };
-
-    const parser = createRDParser(start);
-
-    expect(() => {
-      parser.run(tokenIterator(['a', '.']));
-    }).toThrow(new UnexpectedEOI());
+    expect(result1).toEqual({
+      type: 'start',
+      children: [
+        { type: 'ab', tokens: [
+          { type: 'a', token: input1.tokens[0] },
+          { type: 'b', token: input1.tokens[1] },
+        ] }
+      ]
+    });
   });
 });
 
-describe('oneOf', () => {
+describe('choice', () => {
   it('parses with multiple choices', () => {
     const start = (handle) => {
-      const node1 = oneOf(handle, [a, b]);
+      const node1 = choice(handle, [a, b]);
       handle.consume('.');
-      const node2 = oneOf(handle, [a, b]);
+      const node2 = choice(handle, [a, b]);
 
       handle.consumeEOI();
 
@@ -153,7 +104,7 @@ describe('oneOf', () => {
 
   it('collects errors from all branches if none match', () => {
     const start = (handle) => {
-      const node = oneOf(handle, [
+      const node = choice(handle, [
         a,
         () => {
           const node = b(handle);
@@ -161,9 +112,9 @@ describe('oneOf', () => {
           return { type: '', node };
         },
         () => {
-          const first = oneOf(handle, [c, d]);
+          const first = choice(handle, [c, d]);
           handle.consume('.');
-          const last = oneOf(handle, [a, b]);
+          const last = choice(handle, [a, b]);
 
           return { type: 'c/d', first, last };
         }
@@ -188,112 +139,6 @@ describe('oneOf', () => {
         new TokenMismatch('d', input.tokens[0]),
       ])
     ]));
-  });
-
-  it('handles left recursion', () => {
-    // ((a b) b) b
-    const word = (handle) => {
-      handle.recursionFlag('word');
-      const head = oneOf(handle, [word, a]);
-
-      const [bs, _] = repeated(handle, b);
-
-      return bs.reduce(
-        (prevHead, _nextB) => ({
-          type: 'word',
-          head: prevHead
-        }),
-        head
-      );
-    };
-
-    const start = (handle) => {
-      const node = word(handle);
-
-      handle.consumeEOI();
-
-      return { type: 'start', children: [node] };
-    };
-
-    const parser = createRDParser(start);
-
-    const input = tokenIterator(['a', 'b', 'b', 'b']);
-    const result = parser.run(input);
-
-    expect(result).toEqual({
-      type: 'start',
-      children: [{
-        type: 'word',
-        head: {
-          type: 'word',
-          head: {
-            type: 'word',
-            head: {
-              type: 'a',
-              token: input.tokens[0]
-            }
-          }
-        }
-      }]
-    });
-  });
-
-  it('includes the recursion flags when backtracking', () => {
-    /*
-      in the recursive rule (word) there is an option before the recursive option
-      in oneOf that consumes a token before it fails & backtracks
-    */
-
-    const ab = (handle) => {
-      const nodeA = a(handle);
-      const nodeB = b(handle);
-      return {
-        type: 'ab',
-        a: nodeA,
-        b: nodeB
-      };
-    };
-
-    const word = (handle) => {
-      handle.recursionFlag('word');
-      const head = oneOf(handle, [ab, word, a]);
-
-      const tail = c(handle);
-
-      return {
-        type: 'word',
-        head,
-        tail
-      };
-    };
-
-    const start = (handle) => {
-      const node = word(handle);
-
-      handle.consumeEOI();
-
-      return { type: 'start', children: [node] };
-    };
-
-    const parser = createRDParser(start);
-
-    const input = tokenIterator(['a', 'c']);
-    const result = parser.run(input);
-
-    expect(result).toEqual({
-      type: 'start',
-      children: [{
-        type: 'word',
-        head: {
-          type: 'a',
-          token: input.tokens[0]
-        },
-        tail: {
-          type: 'c',
-          token: input.tokens[1]
-        }
-      }]
-    });
   });
 });
 
@@ -435,3 +280,4 @@ describe('optional', () => {
     });
   });
 });
+
