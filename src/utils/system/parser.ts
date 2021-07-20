@@ -16,6 +16,8 @@ export type LexerHandle<T extends TokenBase> = {
   peek: () => T;
   atEOI: () => boolean;
   consumeEOI: () => void;
+
+  recursionFlag: (flag: unknown) => void;
 };
 
 export type ASTBase = ASTNodeBase;
@@ -37,12 +39,15 @@ export const createRDParser = <T extends TokenBase, A extends ASTBase>(parse: RD
   };
 };
 
+type Checkpoint = { current: number; recFlags: unknown[] };
+
 const createLexerHandle = <T extends TokenBase>(iterator: Iterator<T, undefined>):
   LexerHandle<T> =>
 {
   let cache: T[] = [];
   let current = 0;
-  let checkpoints: number[] = [];
+  let recFlags: unknown[] = [];
+  let checkpoints: Checkpoint[] = [];
 
   const getNext = (): T => {
     if (cache[current] == undefined) {
@@ -75,14 +80,16 @@ const createLexerHandle = <T extends TokenBase>(iterator: Iterator<T, undefined>
 
   return {
     checkpoint: () => {
-      checkpoints = [...checkpoints, current];
+      checkpoints = [...checkpoints, { current, recFlags }];
     },
     backtrack: () => {
       if (checkpoints.length === 0) {
         throw new Error('unable to rewind lexer handle; there are no saved checkpoints');
       }
 
-      current = checkpoints[checkpoints.length - 1];
+      const checkpoint = checkpoints[checkpoints.length - 1];
+      current = checkpoint.current;
+      recFlags = checkpoint.recFlags;
     },
     commit: () => {
       if (checkpoints.length === 0) {
@@ -100,6 +107,7 @@ const createLexerHandle = <T extends TokenBase>(iterator: Iterator<T, undefined>
       }
 
       current = current + 1;
+      recFlags = [];
       return token as Matching<T, N>;
     },
     peek: () => getNext(),
@@ -109,6 +117,13 @@ const createLexerHandle = <T extends TokenBase>(iterator: Iterator<T, undefined>
         const token = getNext();
         throw new TokenMismatch('EOI', token);
       }
+    },
+    recursionFlag: (flag) => {
+      if (recFlags.includes(flag)) {
+        throw new UnrestrainedLeftRecursion(flag);
+      }
+
+      recFlags = [...recFlags, flag];
     }
   };
 };
@@ -131,7 +146,9 @@ export const oneOf = <T extends TokenBase, Ps extends RDParserish<T, unknown>[]>
     } catch (e: unknown) {
       handle.backtrack();
 
-      if (isParseError(e)) {
+      if (e instanceof UnrestrainedLeftRecursion) {
+        /* swallow error & move onto next option */
+      } else if (isParseError(e)) {
         errors = errors.concat(e);
       } else {
         throw e;
@@ -190,6 +207,14 @@ export const optional = <T extends TokenBase, R>(handle: LexerHandle<T>, parser:
 
 
 /* ----- errors ----- */
+
+export class UnrestrainedLeftRecursion extends Error {
+  constructor(
+    readonly flag: unknown
+  ) {
+    super('Unrestrained left recursion in parser');
+  }
+}
 
 export class TokenMismatch extends Error {
   constructor(

@@ -35,14 +35,8 @@ const declaration: RDParser<AST.Declaration> = (handle) => {
 
 const expression: RDParser<AST.Expression> = (handle) => {
   return oneOf(handle, [
-    funcCall,
-    expressionRecSafe
-  ]);
-};
-
-const expressionRecSafe: RDParser<AST.Expression> = (handle) => {
-  return oneOf(handle, [
     parenthesizedExpression,
+    funcCall,
     func,
     tuple,
     name,
@@ -61,16 +55,37 @@ const parenthesizedExpression: RDParser<AST.Expression> = (handle) => {
 };
 
 const funcCall: RDParser<AST.FuncCall> = (handle) => {
-  const func = expressionRecSafe(handle);
-  handle.consume('(');
-  const arg = expression(handle);
-  handle.consume(')');
+  handle.recursionFlag('func-call');
 
-  return {
+  const func = expression(handle);
+
+  // require at least one instance
+  const [args, argError] = repeated(handle, () => {
+    handle.consume('(');
+    const arg = expression(handle);
+    handle.consume(')');
+
+    return arg;
+  });
+
+  if (args.length === 0) {
+    throw argError;
+  }
+
+  const firstCall: AST.FuncCall = {
     type: 'function-call',
     func,
-    arg,
+    arg: args[0],
   };
+
+  return args.slice(1).reduce<AST.FuncCall>(
+    (funcNode, nextArg) => ({
+      type: 'function-call',
+      func: funcNode,
+      arg: nextArg,
+    }),
+    firstCall
+  );
 };
 
 const func: RDParser<AST.Func> = (handle) => {
