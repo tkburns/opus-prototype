@@ -1,7 +1,7 @@
 import { TokenBase } from '../lexer';
 import { TokenMismatch, UnexpectedEOI } from './errors';
 
-export type LexerHandle<T extends TokenBase> = BacktrackingHandle<T>;
+export type LexerHandle<T extends TokenBase> = ConsumeHandle<T>;
 
 
 /* ------------------------------------- */
@@ -39,7 +39,7 @@ const createInputHandle = <T extends TokenBase>(iterator: Iterator<T, undefined>
 
 // TODO - join with input handle?
 
-type Mark = { position: number };
+export type Mark = { position: number };
 export type PositionHandle = {
   current: () => number;
   advance: () => void;
@@ -134,61 +134,5 @@ export const createConsumeHandle = <T extends TokenBase>(iterator: Iterator<T, u
     peek,
     atEOI,
     consumeEOI
-  };
-};
-
-/* ------------------------------------- */
-
-export type BacktrackingHandle<T extends TokenBase> = {
-  consume: ConsumeHandle<T>['consume'];
-  peek: ConsumeHandle<T>['peek'];
-  atEOI: ConsumeHandle<T>['atEOI'];
-  consumeEOI: ConsumeHandle<T>['consumeEOI'];
-
-  mark: ConsumeHandle<T>['mark'];
-  reset: ConsumeHandle<T>['reset'];
-
-  checkpoint: () => void;
-  backtrack: () => void;
-  commit: () => void;
-}
-
-type Checkpoint = { mark: Mark };
-export const createBacktrackingHandle = <T extends TokenBase>(handle: ConsumeHandle<T>): BacktrackingHandle<T> => {
-  let checkpoints: Checkpoint[] = [];
-
-  const checkpoint = () => {
-    checkpoints = [...checkpoints, { mark: handle.mark() }];
-  };
-
-  const backtrack = () => {
-    if (checkpoints.length === 0) {
-      throw new Error('unable to backtrack; there are no saved checkpoints');
-    }
-
-    const checkpoint = checkpoints[checkpoints.length - 1];
-    handle.reset(checkpoint.mark);
-  };
-
-  const commit = () => {
-    if (checkpoints.length === 0) {
-      throw new Error('unable to commit the checkpoint; there are no saved checkpoints');
-    }
-
-    checkpoints = checkpoints.slice(0, -1);
-  };
-
-  return {
-    consume: handle.consume,
-    peek: handle.peek,
-    atEOI: handle.atEOI,
-    consumeEOI: handle.consumeEOI,
-
-    mark: handle.mark,
-    reset: handle.reset,
-
-    checkpoint,
-    backtrack,
-    commit
   };
 };

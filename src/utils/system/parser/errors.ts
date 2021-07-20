@@ -1,8 +1,19 @@
 import { TokenBase } from '../lexer';
 
-export class UnrestrainedLeftRecursion extends Error {
+export class LRecError extends Error {}
+
+export class UnrestrainedLeftRecursion extends LRecError {
   constructor(
-    readonly flag: unknown
+    readonly recName: unknown
+  ) {
+    super('Unrestrained left recursion in parser');
+  }
+}
+
+export class ConsumeBeforeLRec extends LRecError {
+  constructor(
+    readonly recName: unknown,
+    readonly expected?: string,
   ) {
     super('Unrestrained left recursion in parser');
   }
@@ -58,9 +69,13 @@ export class CompositeParseError extends Error {
 export type ParseError =
   TokenMismatch |
   UnexpectedEOI |
-  CompositeParseError;
+  CompositeParseError |
+  UnrestrainedLeftRecursion |
+  ConsumeBeforeLRec;
 
 export const isParseError = (e: unknown): e is ParseError =>
   e instanceof TokenMismatch ||
   e instanceof UnexpectedEOI ||
-  e instanceof CompositeParseError;
+  e instanceof CompositeParseError ||
+  e instanceof UnrestrainedLeftRecursion ||
+  e instanceof ConsumeBeforeLRec;
