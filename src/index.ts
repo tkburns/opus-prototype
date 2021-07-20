@@ -15,6 +15,9 @@ Usage:
 Options:
  --help       [-h]  prints the usage information
  --version    [-v]  prints the version
+ --output t   [-o]  the output type to print
+                    possible values: tokens, all-tokens, ast, code
+                    defaults to code
 `;
 
 
@@ -23,10 +26,12 @@ const args = process.argv.slice(2);
 type Flags = {
   help: boolean;
   version: boolean;
+  output?: string;
 };
 const flagOptions = {
   alias: {
     help: 'h',
+    output: 'o'
   },
   boolean: ['help', 'version']
 };
@@ -43,7 +48,7 @@ if (flags.help || flags._.length !== 1) {
   try {
     const fileStr = fs.readFileSync(path.resolve(file), 'utf-8');
 
-    const result = core.run(fileStr);
+    const result = core(flags.output).run(fileStr);
 
     process.stdout.write(result + '\n');
   } catch (e: unknown) {

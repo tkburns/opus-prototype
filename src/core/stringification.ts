@@ -1,6 +1,16 @@
-import { indentChild, lines } from '&/utils/system/stringification';
+import { indentChild, lines, stringifyToken } from '&/utils/system/stringification';
+import { Module } from '&/utils/system/system';
 import { Walkers, createWalkerModule, Walk } from '&/utils/system/tree-walker';
 import type * as AST from './ast.types';
+import { Token } from './lexer';
+
+/* ---------- Token ---------- */
+
+export const tokenStringifier: Module<Token[], string> = {
+  run: (ts) => ts.map(stringifyToken).join('\n')
+};
+
+/* ---------- AST ---------- */
 
 const stringifyBranch = (process: Walk<AST.Node, string>, nodeType: string, children: AST.Node[]) =>
   lines(
