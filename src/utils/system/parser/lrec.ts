@@ -38,7 +38,7 @@ const ensureLRecHandle = <Handle extends ConsumeHandle<TokenBase>>(handle: Handl
 };
 
 export const createBaseLRecHandle =
-  <Name extends string, Handle extends ConsumeHandle<TokenBase>>(name: Name, _handle: Handle):
+  <Handle extends ConsumeHandle<TokenBase>>(name: string, _handle: Handle):
     LRecHandle<Handle> =>
   {
     const handle = ensureLRecHandle(_handle);
@@ -69,12 +69,12 @@ export const createBaseLRecHandle =
     };
   };
 
-type Prev<Node> = {
+type Prev<Node = unknown> = {
   node: Node;
   endMark: Mark;
 };
 export const createAccLRecHandle =
-  <Name extends string, Node, Handle extends ConsumeHandle<TokenBase>>(name: Name, prev: Prev<Node>, _handle: Handle):
+  <Handle extends ConsumeHandle<TokenBase>>(name: string, prev: Prev, _handle: Handle):
     LRecHandle<Handle> =>
   {
     const handle = ensureLRecHandle(_handle);
