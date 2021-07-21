@@ -9,38 +9,36 @@ export type LexerHandle<T extends TokenBase> = ConsumeHandle<T>;
 type InputResult<T extends TokenBase> =
   { token: T } |
   { EOI: true };
-export type InputHandle<T extends TokenBase> = {
+
+export interface IteratorInput<T extends TokenBase> {
   get: (position: number) => InputResult<T>;
-  // getToken that throws if on EOI?
-};
+}
 
-const createInputHandle = <T extends TokenBase>(iterator: Iterator<T, undefined>):
-  InputHandle<T> =>
-{
-  let tokens: T[] = [];
+const IteratorInput = {
+  create<T extends TokenBase>(iterator: Iterator<T, undefined>): IteratorInput<T> {
+    let tokens: T[] = [];
 
-  const get = (position: number) => {
-    while (position > tokens.length - 1) {
-      const result = iterator.next();
-      if (result.done) {
-        return { EOI: true } as const;
+    const get = (position: number) => {
+      while (position > tokens.length - 1) {
+        const result = iterator.next();
+        if (result.done) {
+          return { EOI: true } as const;
+        }
+
+        tokens = [...tokens, result.value];
       }
 
-      tokens = [...tokens, result.value];
-    }
+      return { token: tokens[position] };
+    };
 
-    return { token: tokens[position] };
-  };
-
-  return { get };
+    return { get };
+  }
 };
 
 /* ------------------------------------- */
 
-// TODO - join with input handle?
-
 export type Mark = { position: number };
-export type PositionHandle = {
+export interface Position {
   current: () => number;
   advance: () => void;
 
@@ -48,91 +46,87 @@ export type PositionHandle = {
   reset: (mark: Mark) => void;
 }
 
-const createPositionHandle = (): PositionHandle => {
-  let position = 0;
+const Position = {
+  create(): Position {
+    let position = 0;
 
-  const current = () => position;
-  const advance = () => { position += 1; };
+    const current = () => position;
+    const advance = () => { position += 1; };
 
-  const mark = () => ({ position });
-  const reset = (m: Mark) => { position = m.position; };
+    const mark = () => ({ position });
+    const reset = (m: Mark) => { position = m.position; };
 
-  return { current, advance, mark, reset };
+    return { current, advance, mark, reset };
+  }
 };
 
 /* ------------------------------------- */
 
 type Matching<T extends TokenBase, N extends T['type']> = T & { type: N };
-interface Consume<T extends TokenBase> {
-  <N extends T['type']>(t: N): Matching<T, N>;
-  (t?: string): T;
-}
 
-export type ConsumeHandle<T extends TokenBase> = {
-  mark: PositionHandle['mark'];
-  reset: PositionHandle['reset'];
+export interface ConsumeHandle<T extends TokenBase> {
+  mark: Position['mark'];
+  reset: Position['reset'];
 
-  consume: Consume<T>;
+  consume<N extends T['type']>(t: N): Matching<T, N>;
+  consume(t?: string): T;
+
   peek: () => T;
   atEOI: () => boolean; // TODO - rename to peekEOI
   consumeEOI: () => void;
 }
 
-export const createConsumeHandle = <T extends TokenBase>(iterator: Iterator<T, undefined>):
-  ConsumeHandle<T> =>
-{
-  const inputHandle = createInputHandle(iterator);
-  const positionHandle = createPositionHandle();
+export const ConsumeHandle = {
+  create<T extends TokenBase>(iterator: Iterator<T, undefined>): ConsumeHandle<T> {
+    const input = IteratorInput.create(iterator);
+    const position = Position.create();
 
-  const consume: Consume<T> = <N extends T['type']>(expected?: N) => {
-    const result = inputHandle.get(positionHandle.current());
+    const mark = position.mark;
+    const reset = position.reset;
 
-    if (!('token' in result)) {
-      throw new UnexpectedEOI();
-    }
+    const consume: ConsumeHandle<T>['consume'] = (expected?: string) => {
+      const result = input.get(position.current());
 
-    const { token } = result;
+      if (!('token' in result)) {
+        throw new UnexpectedEOI();
+      }
 
-    if (expected != null && token.type !== expected) {
-      throw new TokenMismatch(expected, token);
-    }
+      const { token } = result;
 
-    positionHandle.advance();
-    return token as Matching<T, N>;
-  };
+      if (expected != null && token.type !== expected) {
+        throw new TokenMismatch(expected, token);
+      }
 
-  const peek = () => {
-    const result = inputHandle.get(positionHandle.current());
+      position.advance();
+      return token;
+    };
 
-    if (!('token' in result)) {
-      throw new UnexpectedEOI();
-    }
+    const peek = () => {
+      const result = input.get(position.current());
 
-    const { token } = result;
+      if (!('token' in result)) {
+        throw new UnexpectedEOI();
+      }
 
-    return token;
-  };
+      const { token } = result;
 
-  const atEOI = () => {
-    const result = inputHandle.get(positionHandle.current());
-    return 'EOI' in result
-      ? result.EOI
-      : false;
-  };
+      return token;
+    };
 
-  const consumeEOI = () => {
-    const result = inputHandle.get(positionHandle.current());
-    if (!('EOI' in result)) {
-      throw new TokenMismatch('EOI', result.token);
-    }
-  };
+    const atEOI = () => {
+      const result = input.get(position.current());
+      return 'EOI' in result
+        ? result.EOI
+        : false;
+    };
 
-  return {
-    mark: positionHandle.mark,
-    reset: positionHandle.reset,
-    consume,
-    peek,
-    atEOI,
-    consumeEOI
-  };
+    const consumeEOI = () => {
+      const result = input.get(position.current());
+      if (!('EOI' in result)) {
+        throw new TokenMismatch('EOI', result.token);
+      }
+    };
+
+    return { mark, reset, consume, peek, atEOI, consumeEOI };
+  }
 };
