@@ -17,24 +17,6 @@ export class UnrestrainedLeftRecursion extends LRecError {
   }
 }
 
-export class ConsumeBeforeLRec extends LRecError {
-  constructor(
-    readonly recName: string,
-    readonly expected?: string,
-  ) {
-    super(`attempted to consume ${expected ?? 'any'} before recursing ${recName}`);
-  }
-}
-
-export class RecMismatch extends LRecError {
-  constructor(
-    readonly currentRec: string,
-    readonly attemptedRec: string
-  ) {
-    super(`currently accumulating ${currentRec}, not ${attemptedRec}`);
-  }
-}
-
 
 export class TokenMismatch extends ParseError {
   constructor(
