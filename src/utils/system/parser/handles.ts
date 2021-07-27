@@ -70,10 +70,10 @@ export interface ConsumeHandle<T extends TokenBase> {
 
   consume<N extends T['type']>(t: N): Matching<T, N>;
   consume(t?: string): T;
+  consumeEOI: () => void;
 
   peek: () => T;
-  atEOI: () => boolean; // TODO - rename to peekEOI
-  consumeEOI: () => void;
+  peekEOI: () => boolean;
 }
 
 export const ConsumeHandle = {
@@ -101,6 +101,13 @@ export const ConsumeHandle = {
       return token;
     };
 
+    const consumeEOI = () => {
+      const result = input.get(position.current());
+      if (!('EOI' in result)) {
+        throw new TokenMismatch('EOI', result.token);
+      }
+    };
+
     const peek = () => {
       const result = input.get(position.current());
 
@@ -113,20 +120,13 @@ export const ConsumeHandle = {
       return token;
     };
 
-    const atEOI = () => {
+    const peekEOI = () => {
       const result = input.get(position.current());
       return 'EOI' in result
         ? result.EOI
         : false;
     };
 
-    const consumeEOI = () => {
-      const result = input.get(position.current());
-      if (!('EOI' in result)) {
-        throw new TokenMismatch('EOI', result.token);
-      }
-    };
-
-    return { mark, reset, consume, peek, atEOI, consumeEOI };
+    return { mark, reset, consume, peek, peekEOI, consumeEOI };
   }
 };

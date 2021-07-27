@@ -1,6 +1,6 @@
 import { a, b, c, tokenIterator } from './common';
 import { createRDParser } from '../index';
-import { choice } from '../combinators';
+import { choice, repeated } from '../combinators';
 import { lrec } from '../lrec';
 
 it('handles left recursion', () => {
@@ -50,60 +50,62 @@ it('handles left recursion', () => {
   });
 });
 
-it('handle left recursion with base before recursive case', () => {
+it('parses rules in order', () => {
   const start = (handle) => {
     const node = r(handle);
+    const [leftovers, _] = repeated(handle, a);
+    handle.consumeEOI();
+
     return {
       type: 'start',
-      node
+      node,
+      leftovers
     };
   };
 
+  // base (c) also matches recursive case (ca)
   const r = lrec('r', (handle) => {
-    return choice(handle, [c, ca]);
+    return choice(handle, [c, ca, ra]);
   });
 
   const ca = (handle) => {
-    const base = r(handle);
     const nodeC = c(handle);
     const nodeA = a(handle);
 
     return {
-      type: 'ar',
-      base,
+      type: 'ca',
       nodeC,
+      nodeA
+    };
+  };
+
+  const ra = (handle) => {
+    const base = r(handle);
+    const nodeA = a(handle);
+
+    return {
+      type: 'ra',
+      base,
       nodeA,
     };
   };
 
   const parser = createRDParser(start);
 
-  // base (c) also matches recursive case (ca)
-  const input = tokenIterator(['c', 'c', 'a', 'c', 'a', 'c', 'a']);
+  const input = tokenIterator(['c', 'a', 'a']);
   const result = parser.run(input);
 
   expect(result).toEqual({
     type: 'start',
-    node: {
-      type: 'ar',
-      base: {
-        type: 'ar',
-        base: {
-          type: 'ar',
-          base: { type: 'c', token: input.tokens[0] },
-          nodeC: { type: 'c', token: input.tokens[1] },
-          nodeA: { type: 'a', token: input.tokens[2] }
-        },
-        nodeC: { type: 'c', token: input.tokens[3] },
-        nodeA: { type: 'a', token: input.tokens[4] }
-      },
-      nodeC: { type: 'c', token: input.tokens[5] },
-      nodeA: { type: 'a', token: input.tokens[6] }
-    }
+    node: { type: 'c', token: input.tokens[0] },
+    leftovers: [
+      { type: 'a', token: input.tokens[1] },
+      { type: 'a', token: input.tokens[2] },
+    ],
   });
 });
 
-it('handle nested left recursion', () => {
+it('handles nested left recursion', () => {
   const start = (handle) => {
     const node = r1(handle);
     handle.consume('!');
@@ -125,7 +127,7 @@ it('handle nested left recursion', () => {
   });
 
   const r2 = lrec('r2', (handle) => {
-    const node = choice(handle, [ra, rb, c]);
+    const node = choice(handle, [rb, ra, c]);
 
     return {
       type: 'r2',

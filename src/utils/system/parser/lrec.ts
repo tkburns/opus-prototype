@@ -1,9 +1,8 @@
 import { TokenBase } from '../lexer';
-import { ConsumeBeforeLRec, LRecError, UnrestrainedLeftRecursion } from './errors';
+import { UnrestrainedLeftRecursion } from './errors';
 import { ConsumeHandle, Mark } from './handles';
 
 export interface LRecHandleCore {
-  getLRecState: (name: string) => 'base' | 'acc' | null;
   getSavedLRecNode: (n: string) => unknown;
 }
 
@@ -13,17 +12,15 @@ export type LRecHandle<Handle extends ConsumeHandle<TokenBase>> =
 const isLRecHandle = (
   handle: object
 ): handle is LRecHandleCore =>
-  'getLRecState' in handle &&
   'getSavedLRecNode' in handle;
 
 
 export const createEmptyLRecHandle = <Handle extends ConsumeHandle<TokenBase>>(handle: Handle):
   LRecHandle<Handle> =>
 {
-  const getLRecState = () => null;
   const getSavedLRecNode = () => undefined;
 
-  return { ...handle, getLRecState, getSavedLRecNode };
+  return { ...handle, getSavedLRecNode };
 };
 
 
@@ -44,14 +41,6 @@ export const createBaseLRecHandle =
     const handle = ensureLRecHandle(_handle);
     const start = handle.mark();
 
-    const getLRecState = (n: string) => {
-      if (n === name) {
-        return 'base';
-      } else {
-        return handle.getLRecState(n);
-      }
-    };
-
     const getSavedLRecNode = (n: string) => {
       const current = handle.mark();
 
@@ -64,7 +53,6 @@ export const createBaseLRecHandle =
 
     return {
       ...handle,
-      getLRecState,
       getSavedLRecNode: getSavedLRecNode as (n: string) => never
     };
   };
@@ -80,45 +68,19 @@ export const createAccLRecHandle =
     const handle = ensureLRecHandle(_handle);
     const start = handle.mark();
 
-    const getLRecState = (n: string) => {
-      if (n === name) {
-        return 'acc';
-      } else {
-        return handle.getLRecState(n);
-      }
-    };
-
     const getSavedLRecNode = (n: string) => {
       const current = handle.mark();
 
-      if (start.position === current.position) {
-        if (n === name) {
-          handle.reset(prev.endMark);
-          return prev.node;
-        } else if (handle.getLRecState(n) != null) {
-          throw new LRecError(`currently accumulating ${JSON.stringify(name)}, not ${JSON.stringify(n)}`);
-        } else {
-          return undefined;
-        }
+      if (start.position === current.position && n === name) {
+        handle.reset(prev.endMark);
+        return prev.node;
       } else {
         return handle.getSavedLRecNode(n);
       }
     };
 
-    const consume  = (expected?: string) => {
-      const current = handle.mark();
-
-      if (start.position === current.position) {
-        throw new ConsumeBeforeLRec(name, expected);
-      }
-
-      return handle.consume(expected);
-    };
-
     return {
       ...handle,
-      getLRecState,
-      consume,
       getSavedLRecNode
     };
   };
@@ -132,6 +94,11 @@ export const LRecHandle = {
 
 type RDParser<T extends TokenBase, R, H extends ConsumeHandle<T>> = (handle: H) => R;
 
+/*
+  requires that all parsers be *pure* & *referentially transparent*
+  stops when the parser stops consuming additional input (end position <= prev end position)
+  essentially calculates the fixpoint of the parser given the input (not exactly... only compares the position/mark, not the result)
+*/
 export const lrec = <T extends TokenBase, R, H extends ConsumeHandle<T>>(name: string, parser: RDParser<T, R, H>): RDParser<T, R, H> =>
   (handle: H) => {
     if (isLRecHandle(handle)) {
@@ -155,7 +122,13 @@ export const lrec = <T extends TokenBase, R, H extends ConsumeHandle<T>>(name: s
         const lrecHandle = LRecHandle.createAcc(name, prev, handle);
         const node = parser(lrecHandle);
 
-        prev = { node: node, endMark: handle.mark() };
+        const endMark = handle.mark();
+        if (endMark.position > prev.endMark.position) {
+          prev = { node, endMark };
+        } else {
+          failed = true;
+        }
+
       } catch (e) {
         failed = true;
       }
