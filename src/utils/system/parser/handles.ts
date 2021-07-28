@@ -1,16 +1,13 @@
 import { TokenBase } from '../lexer';
 import { TokenMismatch, UnexpectedEOI } from './errors';
 
-export type LexerHandle<T extends TokenBase> = ConsumeHandle<T>;
-
-
 /* ------------------------------------- */
 
 type InputResult<T extends TokenBase> =
   { token: T } |
   { EOI: true };
 
-export interface IteratorInput<T extends TokenBase> {
+export interface IteratorInput<T extends TokenBase = TokenBase> {
   get: (position: number) => InputResult<T>;
 }
 
@@ -64,7 +61,7 @@ const Position = {
 
 type Matching<T extends TokenBase, N extends T['type']> = T & { type: N };
 
-export interface ConsumeHandle<T extends TokenBase> {
+export interface ConsumeHandle<T extends TokenBase = TokenBase> {
   mark: Position['mark'];
   reset: Position['reset'];
 

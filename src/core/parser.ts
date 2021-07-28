@@ -1,9 +1,10 @@
-import { createRDParser, LexerHandle, repeated, optional, choice } from '&/utils/system/parser';
+import { createRDParser, repeated, optional, choice } from '&/utils/system/parser';
 import { FilteredToken } from './lexer';
 import type * as AST from './ast.types';
 import { lrec } from '&/utils/system/parser/lrec';
+import { ConsumeHandle } from '&/utils/system/parser/handles';
 
-type RDParser<Node> = (handle: LexerHandle<FilteredToken>) => Node;
+type RDParser<Node> = (handle: ConsumeHandle<FilteredToken>) => Node;
 
 const program: RDParser<AST.Program> = (handle) => {
   const [entries, error] = repeated(handle, () =>

@@ -1,18 +1,15 @@
-import { TokenBase } from '../lexer';
+import { RDParser } from './common.types';
 import { CompositeParseError, ParseError } from './errors';
-import { LexerHandle } from './handles';
+import { ConsumeHandle } from './handles';
 
 
-type RDParser<T extends TokenBase, R> = (handle: LexerHandle<T>) => R;
-
-
-export const attempt = <T extends TokenBase, P extends RDParser<T, unknown>>(
-  handle: LexerHandle<T>,
-  parser: P
-): ReturnType<P> => {
+export const attempt = <H extends ConsumeHandle, R>(
+  handle: H,
+  parser: RDParser<H, R>
+): R => {
   const mark = handle.mark();
   try {
-    return parser(handle) as ReturnType<P>;
+    return parser(handle);
   } catch (e: unknown) {
     handle.reset(mark);
     throw e;
@@ -20,8 +17,8 @@ export const attempt = <T extends TokenBase, P extends RDParser<T, unknown>>(
 };
 
 
-export const choice = <T extends TokenBase, Ps extends RDParser<T, unknown>[]>(
-  handle: LexerHandle<T>,
+export const choice = <H extends ConsumeHandle, Ps extends RDParser<H, unknown>[]>(
+  handle: H,
   parsers: Ps
 ): ReturnType<Ps[number]> => {
   let errors: ParseError[] = [];
@@ -42,7 +39,7 @@ export const choice = <T extends TokenBase, Ps extends RDParser<T, unknown>[]>(
 };
 
 
-export const repeated = <T extends TokenBase, R>(handle: LexerHandle<T>, parser: RDParser<T, R>): [R[], Error]  => {
+export const repeated = <H extends ConsumeHandle, R>(handle: H, parser: RDParser<H, R>): [R[], Error]  => {
   let error: ParseError | undefined = undefined;
 
   try {
@@ -61,7 +58,7 @@ export const repeated = <T extends TokenBase, R>(handle: LexerHandle<T>, parser:
 };
 
 
-export const optional = <T extends TokenBase, R>(handle: LexerHandle<T>, parser: RDParser<T, R>): [R, undefined] | [undefined, Error] => {
+export const optional = <H extends ConsumeHandle, R>(handle: H, parser: RDParser<H, R>): [R, undefined] | [undefined, Error] => {
   let error: Error | undefined = undefined;
 
   try {
