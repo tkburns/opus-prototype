@@ -138,3 +138,43 @@ it('caches based on position/mark', () => {
 
   expect(rawA).toHaveBeenCalledTimes(2);
 });
+
+it('forces cache to reevaluate rule', () => {
+  const start = (handle, ctx) => {
+    const child = choice(handle, ctx, [
+      () => node(handle, { ...ctx, tokenType: 'b', ruleCount: 1 }),
+      () => node(handle, { ...ctx, tokenType: 'c', ruleCount: 2 }),
+      () => node(handle, { ...ctx, tokenType: 'c', ruleCount: 3, cache: { reevaluate: true } })
+    ]);
+
+    handle.consumeEOI();
+
+    return {
+      type: 'start',
+      children: [child]
+    };
+  };
+
+  const rawNode = jest.fn((handle, ctx) => {
+    const tokenType = ctx.tokenType ?? 'a';
+
+    const token = handle.consume(tokenType);
+    return { type: 'node', token, ruleCount: ctx.ruleCount };
+  });
+  const node = cached(rawNode);
+
+  const parser = createRDParser(start);
+
+  const input = tokenIterator(['c']);
+  const result = parser.run(input);
+
+  expect(result).toEqual({
+    type: 'start',
+    children: [
+      { type: 'node', token: input.tokens[0], ruleCount: 3 },
+    ]
+  });
+  expect(rawNode).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ tokenType: 'b', ruleCount: 1 }));
+  expect(rawNode).not.toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ tokenType: 'c', ruleCount: 2 }));
+  expect(rawNode).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ tokenType: 'c', ruleCount: 3 }));
+});

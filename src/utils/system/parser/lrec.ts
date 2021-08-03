@@ -1,129 +1,54 @@
-import { TokenBase } from '../lexer';
+import { CacheContext, CacheEntry } from './cache';
 import { RDParser } from './common.types';
 import { UnrestrainedLeftRecursion } from './errors';
-import { ConsumeHandle, Mark } from './handles';
-
-export interface LRecHandleCore {
-  getSavedLRecNode: (n: string) => unknown;
-}
-
-export type LRecHandle<Handle extends ConsumeHandle<TokenBase>> =
-  Handle & LRecHandleCore;
-
-const isLRecHandle = (
-  handle: object
-): handle is LRecHandleCore =>
-  'getSavedLRecNode' in handle;
-
-
-export const createEmptyLRecHandle = <Handle extends ConsumeHandle<TokenBase>>(handle: Handle):
-  LRecHandle<Handle> =>
-{
-  const getSavedLRecNode = () => undefined;
-
-  return { ...handle, getSavedLRecNode };
-};
-
-
-const ensureLRecHandle = <Handle extends ConsumeHandle<TokenBase>>(handle: Handle):
-  Handle & LRecHandleCore =>
-{
-  if (isLRecHandle(handle)) {
-    return handle;
-  } else {
-    return createEmptyLRecHandle(handle);
-  }
-};
-
-export const createBaseLRecHandle =
-  <Handle extends ConsumeHandle<TokenBase>>(name: string, _handle: Handle):
-    LRecHandle<Handle> =>
-  {
-    const handle = ensureLRecHandle(_handle);
-    const start = handle.mark();
-
-    const getSavedLRecNode = (n: string) => {
-      const current = handle.mark();
-
-      if (start.position === current.position && n === name) {
-        throw new UnrestrainedLeftRecursion(name);
-      } else {
-        return handle.getSavedLRecNode(n);
-      }
-    };
-
-    return {
-      ...handle,
-      getSavedLRecNode: getSavedLRecNode as (n: string) => never
-    };
-  };
-
-type Prev<Node = unknown> = {
-  node: Node;
-  endMark: Mark;
-};
-export const createAccLRecHandle =
-  <Handle extends ConsumeHandle<TokenBase>>(name: string, prev: Prev, _handle: Handle):
-    LRecHandle<Handle> =>
-  {
-    const handle = ensureLRecHandle(_handle);
-    const start = handle.mark();
-
-    const getSavedLRecNode = (n: string) => {
-      const current = handle.mark();
-
-      if (start.position === current.position && n === name) {
-        handle.reset(prev.endMark);
-        return prev.node;
-      } else {
-        return handle.getSavedLRecNode(n);
-      }
-    };
-
-    return {
-      ...handle,
-      getSavedLRecNode
-    };
-  };
-
-export const LRecHandle = {
-  createEmpty: createEmptyLRecHandle,
-  createBase: createBaseLRecHandle,
-  createAcc: createAccLRecHandle,
-};
-
+import { ConsumeHandle } from './handles';
 
 /*
   requires that all parsers be *pure* & *referentially transparent*
   stops when the parser stops consuming additional input (end position <= prev end position)
   essentially calculates the fixpoint of the parser given the input (not exactly... only compares the position/mark, not the result)
 */
-export const lrec = <H extends ConsumeHandle, C, R>(name: string, parser: RDParser<H, C, R>): RDParser<H, C, R> =>
-  (handle: H, ctx: C) => {
-    if (isLRecHandle(handle)) {
-      const saved = handle.getSavedLRecNode(name) as R | undefined;
-      if (saved) {
-        return saved;
+
+export const lrec = <H extends ConsumeHandle, C, R>(parser: RDParser<H, C, R>): RDParser<H, C, R> => {
+  const cache = new Map<number, CacheEntry<R>>();
+
+  return (handle, context: C & CacheContext) => {
+
+    const start = handle.mark();
+
+    const entry = cache.get(start.position);
+    if (entry) {
+      if ('error' in entry) {
+        throw entry.error;
+      } else {
+        handle.reset(entry.end);
+        return entry.node;
       }
     }
 
-    const startMark = handle.mark();
+    cache.set(start.position, { error: new UnrestrainedLeftRecursion() });
+    const base = parser(handle, context);
+    let prev = { node: base, end: handle.mark() };
 
-    const baseHandle = LRecHandle.createBase(name, handle);
-    const base = parser(baseHandle, ctx);
-    let prev = { node: base, endMark: handle.mark() };
+    const contextWithCache = {
+      ...context,
+      cache: {
+        ...context?.cache,
+        reevaluate: true
+      }
+    };
 
     let failed = false;
     while (!failed) {
       try {
-        handle.reset(startMark);
+        handle.reset(start);
 
-        const lrecHandle = LRecHandle.createAcc(name, prev, handle);
-        const node = parser(lrecHandle, ctx);
+        cache.set(start.position, prev);
+        const node = parser(handle, contextWithCache);
 
-        const endMark = handle.mark();
-        if (endMark.position > prev.endMark.position) {
-          prev = { node, endMark };
+        const end = handle.mark();
+        if (end.position > prev.end.position) {
+          prev = { node, end };
         } else {
           failed = true;
         }
@@ -133,6 +58,8 @@ export const lrec = <H extends ConsumeHandle, C, R>(name: string, parser: RDPars
       }
     }
 
-    handle.reset(prev.endMark);
+    cache.delete(start.position);
+    handle.reset(prev.end);
     return prev.node;
   };
+};
