@@ -1,4 +1,5 @@
 import { TokenBase } from '../lexer';
+import { RDParser } from './common.types';
 import { UnrestrainedLeftRecursion } from './errors';
 import { ConsumeHandle, Mark } from './handles';
 
@@ -92,15 +93,13 @@ export const LRecHandle = {
 };
 
 
-type RDParser<T extends TokenBase, R, H extends ConsumeHandle<T>> = (handle: H) => R;
-
 /*
   requires that all parsers be *pure* & *referentially transparent*
   stops when the parser stops consuming additional input (end position <= prev end position)
   essentially calculates the fixpoint of the parser given the input (not exactly... only compares the position/mark, not the result)
 */
-export const lrec = <T extends TokenBase, R, H extends ConsumeHandle<T>>(name: string, parser: RDParser<T, R, H>): RDParser<T, R, H> =>
-  (handle: H) => {
+export const lrec = <H extends ConsumeHandle, C, R>(name: string, parser: RDParser<H, C, R>): RDParser<H, C, R> =>
+  (handle: H, ctx: C) => {
     if (isLRecHandle(handle)) {
       const saved = handle.getSavedLRecNode(name) as R | undefined;
       if (saved) {
@@ -111,7 +110,7 @@ export const lrec = <T extends TokenBase, R, H extends ConsumeHandle<T>>(name: s
     const startMark = handle.mark();
 
     const baseHandle = LRecHandle.createBase(name, handle);
-    const base = parser(baseHandle);
+    const base = parser(baseHandle, ctx);
     let prev = { node: base, endMark: handle.mark() };
 
     let failed = false;
@@ -120,7 +119,7 @@ export const lrec = <T extends TokenBase, R, H extends ConsumeHandle<T>>(name: s
         handle.reset(startMark);
 
         const lrecHandle = LRecHandle.createAcc(name, prev, handle);
-        const node = parser(lrecHandle);
+        const node = parser(lrecHandle, ctx);
 
         const endMark = handle.mark();
         if (endMark.position > prev.endMark.position) {

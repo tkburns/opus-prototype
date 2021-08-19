@@ -4,11 +4,11 @@ import type * as AST from './ast.types';
 import { lrec } from '&/utils/system/parser/lrec';
 import { ConsumeHandle } from '&/utils/system/parser/handles';
 
-type RDParser<Node> = (handle: ConsumeHandle<FilteredToken>) => Node;
+type RDParser<Node, C = object> = (handle: ConsumeHandle<FilteredToken>, context: C) => Node;
 
-const program: RDParser<AST.Program> = (handle) => {
-  const [entries, error] = repeated(handle, () =>
-    choice(handle, [declaration, expression])
+const program: RDParser<AST.Program> = (handle, ctx) => {
+  const [entries, error] = repeated(handle, ctx, () =>
+    choice(handle, ctx, [declaration, expression])
   );
 
   try {
@@ -23,10 +23,10 @@ const program: RDParser<AST.Program> = (handle) => {
   };
 };
 
-const declaration: RDParser<AST.Declaration> = (handle) => {
-  const vrb = name(handle);
+const declaration: RDParser<AST.Declaration> = (handle, ctx) => {
+  const vrb = name(handle, ctx);
   handle.consume('=');
-  const expr = expression(handle);
+  const expr = expression(handle, ctx);
 
   return {
     type: 'declaration',
@@ -35,8 +35,8 @@ const declaration: RDParser<AST.Declaration> = (handle) => {
   };
 };
 
-const expression: RDParser<AST.Expression> = (handle) => {
-  return choice(handle, [
+const expression: RDParser<AST.Expression> = (handle, ctx) => {
+  return choice(handle, ctx, [
     parenthesizedExpression,
     funcCall,
     func,
@@ -48,21 +48,21 @@ const expression: RDParser<AST.Expression> = (handle) => {
   ]);
 };
 
-const parenthesizedExpression: RDParser<AST.Expression> = (handle) => {
+const parenthesizedExpression: RDParser<AST.Expression> = (handle, ctx) => {
   handle.consume('(');
-  const expr = expression(handle);
+  const expr = expression(handle, ctx);
   handle.consume(')');
 
   return expr;
 };
 
-const funcCall: RDParser<AST.FuncCall> = lrec('func-call', (handle) => {
-  const func = expression(handle);
+const funcCall: RDParser<AST.FuncCall> = lrec((handle, ctx) => {
+  const func = expression(handle, ctx);
 
   // require at least one instance
-  const [args, argError] = repeated(handle, () => {
+  const [args, argError] = repeated(handle, ctx, () => {
     handle.consume('(');
-    const arg = expression(handle);
+    const arg = expression(handle, ctx);
     handle.consume(')');
 
     return arg;
@@ -88,10 +88,10 @@ const funcCall: RDParser<AST.FuncCall> = lrec('func-call', (handle) => {
   );
 });
 
-const func: RDParser<AST.Func> = (handle) => {
-  const arg = name(handle);
+const func: RDParser<AST.Func> = (handle, ctx) => {
+  const arg = name(handle, ctx);
   handle.consume('=>');
-  const expr = expression(handle);
+  const expr = expression(handle, ctx);
 
   return {
     type: 'function',
@@ -100,12 +100,12 @@ const func: RDParser<AST.Func> = (handle) => {
   };
 };
 
-const tuple: RDParser<AST.Tuple> = (handle) => {
+const tuple: RDParser<AST.Tuple> = (handle, ctx) => {
   handle.consume('(');
 
-  const [members] = repeated(handle, () => {
-    const member = expression(handle);
-    optional(handle, () => {
+  const [members] = repeated(handle, ctx, () => {
+    const member = expression(handle, ctx);
+    optional(handle, ctx, () => {
       handle.consume(',');
     });
 

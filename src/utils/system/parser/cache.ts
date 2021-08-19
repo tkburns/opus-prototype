@@ -6,10 +6,10 @@ export type CacheEntry<R> =
   { node: R; end: Mark } |
   { error: ParseError };
 
-export const cached = <H extends ConsumeHandle, R>(parser: RDParser<H, R>): RDParser<H, R> => {
+export const cached = <H extends ConsumeHandle, C, R>(parser: RDParser<H, C, R>): RDParser<H, C, R> => {
   const cache = new Map<number, CacheEntry<R>>();
 
-  return (handle) => {
+  return (handle, context: C) => {
     const start = handle.mark();
 
     const entry = cache.get(start.position);
@@ -23,7 +23,7 @@ export const cached = <H extends ConsumeHandle, R>(parser: RDParser<H, R>): RDPa
     }
 
     try {
-      const node = parser(handle);
+      const node = parser(handle, context);
       const end = handle.mark();
       cache.set(start.position, { node, end });
 

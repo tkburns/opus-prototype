@@ -4,8 +4,8 @@ import { createRDParser } from '..';
 import { choice } from '../combinators';
 
 it('caches successful parse results', () => {
-  const start = (handle) => {
-    const node = choice(handle, [ABC, ABD]);
+  const start = (handle, ctx) => {
+    const node = choice(handle, ctx, [ABC, ABD]);
     handle.consumeEOI();
 
     return {
@@ -14,10 +14,10 @@ it('caches successful parse results', () => {
     };
   };
 
-  const ABC = (handle) => {
-    const nodeA = cachedA(handle);
-    const nodeB = rawB(handle);
-    const nodeC = c(handle);
+  const ABC = (handle, ctx) => {
+    const nodeA = cachedA(handle, ctx);
+    const nodeB = rawB(handle, ctx);
+    const nodeC = c(handle, ctx);
 
     return {
       type: 'ABC',
@@ -25,10 +25,10 @@ it('caches successful parse results', () => {
     };
   };
 
-  const ABD = (handle) => {
-    const nodeA = cachedA(handle);
-    const nodeB = rawB(handle);
-    const nodeD = d(handle);
+  const ABD = (handle, ctx) => {
+    const nodeA = cachedA(handle, ctx);
+    const nodeB = rawB(handle, ctx);
+    const nodeD = d(handle, ctx);
 
     return {
       type: 'ABD',
@@ -62,8 +62,8 @@ it('caches successful parse results', () => {
 });
 
 it('caches failed parses', () => {
-  const start = (handle) => {
-    const node = choice(handle, [AB, AC, d]);
+  const start = (handle, ctx) => {
+    const node = choice(handle, ctx, [AB, AC, d]);
     handle.consumeEOI();
 
     return {
@@ -72,9 +72,9 @@ it('caches failed parses', () => {
     };
   };
 
-  const AB = (handle) => {
-    const nodeA = cachedA(handle);
-    const nodeB = b(handle);
+  const AB = (handle, ctx) => {
+    const nodeA = cachedA(handle, ctx);
+    const nodeB = b(handle, ctx);
 
     return {
       type: 'AB',
@@ -82,9 +82,9 @@ it('caches failed parses', () => {
     };
   };
 
-  const AC = (handle) => {
-    const nodeA = cachedA(handle);
-    const nodeC = c(handle);
+  const AC = (handle, ctx) => {
+    const nodeA = cachedA(handle, ctx);
+    const nodeC = c(handle, ctx);
 
     return {
       type: 'AC',
@@ -109,9 +109,9 @@ it('caches failed parses', () => {
 });
 
 it('caches based on position/mark', () => {
-  const start = (handle) => {
-    const node1 = cachedA(handle);
-    const node2 = cachedA(handle);
+  const start = (handle, ctx) => {
+    const node1 = cachedA(handle, ctx);
+    const node2 = cachedA(handle, ctx);
     handle.consumeEOI();
 
     return {

@@ -4,21 +4,21 @@ import { choice, repeated } from '../combinators';
 import { lrec } from '../lrec';
 
 it('handles left recursion', () => {
-  const start = (handle) => {
-    const node = r(handle);
+  const start = (handle, ctx) => {
+    const node = r(handle, ctx);
     return {
       type: 'start',
       node
     };
   };
 
-  const r = lrec('r', (handle) => {
-    return choice(handle, [ar, c]);
+  const r = lrec('r', (handle, ctx) => {
+    return choice(handle, ctx, [ar, c]);
   });
 
-  const ar = (handle) => {
-    const base = r(handle);
-    const node = a(handle);
+  const ar = (handle, ctx) => {
+    const base = r(handle, ctx);
+    const node = a(handle, ctx);
 
     return {
       type: 'ar',
@@ -51,9 +51,9 @@ it('handles left recursion', () => {
 });
 
 it('parses rules in order', () => {
-  const start = (handle) => {
-    const node = r(handle);
-    const [leftovers, _] = repeated(handle, a);
+  const start = (handle, ctx) => {
+    const node = r(handle, ctx);
+    const [leftovers, _] = repeated(handle, ctx, a);
     handle.consumeEOI();
 
     return {
@@ -64,13 +64,13 @@ it('parses rules in order', () => {
   };
 
   // base (c) also matches recursive case (ca)
-  const r = lrec('r', (handle) => {
-    return choice(handle, [c, ca, ra]);
+  const r = lrec('r', (handle, ctx) => {
+    return choice(handle, ctx, [c, ca, ra]);
   });
 
-  const ca = (handle) => {
-    const nodeC = c(handle);
-    const nodeA = a(handle);
+  const ca = (handle, ctx) => {
+    const nodeC = c(handle, ctx);
+    const nodeA = a(handle, ctx);
 
     return {
       type: 'ca',
@@ -79,9 +79,9 @@ it('parses rules in order', () => {
     };
   };
 
-  const ra = (handle) => {
-    const base = r(handle);
-    const nodeA = a(handle);
+  const ra = (handle, ctx) => {
+    const base = r(handle, ctx);
+    const nodeA = a(handle, ctx);
 
     return {
       type: 'ra',
@@ -106,8 +106,8 @@ it('parses rules in order', () => {
 });
 
 it('handles nested left recursion', () => {
-  const start = (handle) => {
-    const node = r1(handle);
+  const start = (handle, ctx) => {
+    const node = r1(handle, ctx);
     handle.consume('!');
 
     return {
@@ -116,8 +116,8 @@ it('handles nested left recursion', () => {
     };
   };
 
-  const r1 = lrec('r1', (handle) => {
-    const node = r2(handle);
+  const r1 = lrec('r1', (handle, ctx) => {
+    const node = r2(handle, ctx);
     handle.consume('.');
 
     return {
@@ -126,8 +126,8 @@ it('handles nested left recursion', () => {
     };
   });
 
-  const r2 = lrec('r2', (handle) => {
-    const node = choice(handle, [rb, ra, c]);
+  const r2 = lrec('r2', (handle, ctx) => {
+    const node = choice(handle, ctx, [rb, ra, c]);
 
     return {
       type: 'r2',
@@ -135,9 +135,9 @@ it('handles nested left recursion', () => {
     };
   });
 
-  const ra = (handle) => {
-    const rec = r1(handle);
-    const node = a(handle);
+  const ra = (handle, ctx) => {
+    const rec = r1(handle, ctx);
+    const node = a(handle, ctx);
 
     return {
       type: 'ra',
@@ -146,9 +146,9 @@ it('handles nested left recursion', () => {
     };
   };
 
-  const rb = (handle) => {
-    const rec = r2(handle);
-    const node = b(handle);
+  const rb = (handle, ctx) => {
+    const rec = r2(handle, ctx);
+    const node = b(handle, ctx);
 
     return {
       type: 'rb',

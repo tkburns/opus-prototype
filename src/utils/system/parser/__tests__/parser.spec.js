@@ -1,12 +1,13 @@
-import { a, b, tokenIterator } from './common';
+import { a, b, c, tokenIterator } from './common';
 import { createRDParser } from '../index';
 import { TokenMismatch, UnexpectedEOI } from '../errors';
+import { repeated } from '../combinators';
 
 it('parses with peg parser', () => {
-  const start = (handle) => {
-    const nodeA = a(handle);
+  const start = (handle, ctx) => {
+    const nodeA = a(handle, ctx);
     handle.consume('.');
-    const nodeB = b(handle);
+    const nodeB = b(handle, ctx);
 
     handle.consumeEOI();
 
@@ -27,11 +28,50 @@ it('parses with peg parser', () => {
   });
 });
 
+it('provides context for more advanced usages', () => {
+  const start = (handle, ctx) => {
+    const nodeA = a(handle, ctx);
+    separator(handle, ctx);
+    const nodeB = b(handle, ctx);
+    separator(handle, { ...ctx, separator: '|' });
+    const nodeC = c(handle, ctx);
+
+    handle.consumeEOI();
+
+    return { type: 'start', children: [nodeA, nodeB, nodeC] };
+  };
+
+  const separator = (handle, ctx) => {
+    const sep = ctx.separator ?? '.';
+
+    handle.consume(sep);
+    repeated(handle, ctx, () => {
+      handle.consume(sep);
+    });
+
+    return undefined;
+  };
+
+  const parser = createRDParser(start);
+
+  const input = tokenIterator(['a', '.', 'b', '|', '|', 'c']);
+  const result = parser.run(input);
+
+  expect(result).toEqual({
+    type: 'start',
+    children: [
+      { type: 'a', token: input.tokens[0] },
+      { type: 'b', token: input.tokens[2] },
+      { type: 'c', token: input.tokens[5] },
+    ]
+  });
+});
+
 it('throws TokenMismatch errors', () => {
-  const start = (handle) => {
-    const nodeA = a(handle);
+  const start = (handle, ctx) => {
+    const nodeA = a(handle, ctx);
     handle.consume('.');
-    const nodeB = b(handle);
+    const nodeB = b(handle, ctx);
 
     handle.consumeEOI();
 
@@ -52,10 +92,10 @@ it('throws TokenMismatch errors', () => {
 });
 
 it('throws UnexpectedEOI errors', () => {
-  const start = (handle) => {
-    const nodeA = a(handle);
+  const start = (handle, ctx) => {
+    const nodeA = a(handle, ctx);
     handle.consume('.');
-    const nodeB = b(handle);
+    const nodeB = b(handle, ctx);
 
     handle.consumeEOI();
 
