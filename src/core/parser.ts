@@ -3,6 +3,7 @@ import { FilteredToken } from './lexer';
 import type * as AST from './ast.types';
 import { lrec } from '&/utils/system/parser/lrec';
 import { ConsumeHandle } from '&/utils/system/parser/handles';
+import { cached } from '&/utils/system/parser/cache';
 
 type RDParser<Node, C = object> = (handle: ConsumeHandle<FilteredToken>, context: C) => Node;
 
@@ -23,7 +24,7 @@ const program: RDParser<AST.Program> = (handle, ctx) => {
   };
 };
 
-const declaration: RDParser<AST.Declaration> = (handle, ctx) => {
+const declaration: RDParser<AST.Declaration> = cached((handle, ctx) => {
   const vrb = name(handle, ctx);
   handle.consume('=');
   const expr = expression(handle, ctx);
@@ -33,9 +34,9 @@ const declaration: RDParser<AST.Declaration> = (handle, ctx) => {
     name: vrb,
     expression: expr,
   };
-};
+});
 
-const expression: RDParser<AST.Expression> = (handle, ctx) => {
+const expression: RDParser<AST.Expression> = cached((handle, ctx) => {
   return choice(handle, ctx, [
     parenthesizedExpression,
     funcCall,
@@ -46,7 +47,7 @@ const expression: RDParser<AST.Expression> = (handle, ctx) => {
     number,
     text,
   ]);
-};
+});
 
 const parenthesizedExpression: RDParser<AST.Expression> = (handle, ctx) => {
   handle.consume('(');
