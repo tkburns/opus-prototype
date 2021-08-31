@@ -10,10 +10,8 @@ export class ParseError extends Error {
 export class LRecError extends ParseError {}
 
 export class UnrestrainedLeftRecursion extends LRecError {
-  constructor(
-    readonly recName: string
-  ) {
-    super(`Unrestrained left recursion in parser for ${recName}`);
+  constructor() {
+    super('encountered unrestrained left recursion');
   }
 }
 
