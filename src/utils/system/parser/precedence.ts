@@ -1,32 +1,37 @@
 import { choice } from '.';
-import { RDParser } from './common.types';
+import { ExtendedRDParser, RDParser } from './common.types';
 import { ConsumeHandle } from './handles';
 
-export const precedented = <H extends ConsumeHandle, C, Ps extends RDParser<H, C, unknown>[][]>(
+
+export const precedented = <H extends ConsumeHandle, C, R, Ps extends ExtendedRDParser<H, C, [number], R>>(
   handle: H,
   context: C,
   precedence: number,
-  parserTable: Ps
-): ReturnType<Ps[number][number]> => {
+  parserTable: Ps[][]
+): R => {
   if (precedence < 0 && precedence >= parserTable.length) {
     throw new Error(`precedence out of bounds of parserTable (0 .. ${parserTable.length - 1})`);
   }
 
-  const choices: Ps[number] = parserTable.reduceRight((precedenceLevels, parsers) => {
-    const nextPrecedenceLevel: Ps[number][number] | undefined = precedenceLevels[0];
+  const choices: RDParser<H, C, R>[] = parserTable.reduceRight((precedenceLevels, parsers, level) => {
+    const refinedParsers = parsers.map<RDParser<H, C, R>>(parser =>
+      (h, c) => parser(h, c, level)
+    );
 
-    const currentPrecedenceLevel: Ps[number][number] = (handle, context) => {
+    const nextPrecedenceLevel: RDParser<H, C, R> | undefined = precedenceLevels[0];
+
+    const currentPrecedenceLevel: RDParser<H, C, R> = (handle, context) => {
       const currentChoices = nextPrecedenceLevel
-        ? [...parsers, nextPrecedenceLevel]
-        : parsers;
+        ? [...refinedParsers, nextPrecedenceLevel]
+        : refinedParsers;
 
       return choice(handle, context, currentChoices);
     };
 
     return [currentPrecedenceLevel, ...precedenceLevels];
-  }, [] as Ps[number]);
+  }, [] as RDParser<H, C, R>[]);
 
-  const precedenceParser: Ps[number][number] = choices[precedence];
+  const precedenceParser: RDParser<H, C, R> = choices[precedence];
 
-  return precedenceParser(handle, context) as ReturnType<Ps[number][number]>;
+  return precedenceParser(handle, context);
 };

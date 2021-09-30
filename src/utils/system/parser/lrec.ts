@@ -1,5 +1,5 @@
 import { CacheContext, CacheEntry } from './cache';
-import { RDParser } from './common.types';
+import { ExtendedRDParser } from './common.types';
 import { UnrestrainedLeftRecursion } from './errors';
 import { ConsumeHandle } from './handles';
 
@@ -9,10 +9,10 @@ import { ConsumeHandle } from './handles';
   essentially calculates the fixpoint of the parser given the input (not exactly... only compares the position/mark, not the result)
 */
 
-export const lrec = <H extends ConsumeHandle, C, R>(parser: RDParser<H, C, R>): RDParser<H, C, R> => {
+export const lrec = <H extends ConsumeHandle, C, As extends unknown[], R>(parser: ExtendedRDParser<H, C, As, R>): ExtendedRDParser<H, C, As, R> => {
   const cache = new Map<number, CacheEntry<R>>();
 
-  return (handle, context: C & CacheContext) => {
+  return (handle, context: C & CacheContext, ...args) => {
 
     const start = handle.mark();
 
@@ -27,7 +27,7 @@ export const lrec = <H extends ConsumeHandle, C, R>(parser: RDParser<H, C, R>): 
     }
 
     cache.set(start.position, { error: new UnrestrainedLeftRecursion() });
-    const base = parser(handle, context);
+    const base = parser(handle, context, ...args);
     let prev = { node: base, end: handle.mark() };
 
     const contextWithCache = {
@@ -44,7 +44,7 @@ export const lrec = <H extends ConsumeHandle, C, R>(parser: RDParser<H, C, R>): 
         handle.reset(start);
 
         cache.set(start.position, prev);
-        const node = parser(handle, contextWithCache);
+        const node = parser(handle, contextWithCache, ...args);
 
         const end = handle.mark();
         if (end.position > prev.end.position) {
