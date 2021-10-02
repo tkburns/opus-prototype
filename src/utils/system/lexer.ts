@@ -1,3 +1,5 @@
+import type { skeyof } from '../helper.types';
+import type { Input, Source } from './input';
 import type { Module } from './system';
 
 type Pattern = string | RegExp;
@@ -8,8 +10,12 @@ export type LexerRulesBase = {
   [key: string]: Pattern | [Pattern, Mapper];
 };
 
+export type TokenIterator<T extends TokenBase> = Iterator<T, undefined> & {
+  source: Source;
+};
+
 export type LexerModule<T extends LexerRulesBase = LexerRulesBase> =
-  Module<string, Iterator<LexerToken<T>, undefined>>;
+  Module<Input, TokenIterator<LexerToken<T>>>;
 
 
 type Location = {
@@ -30,13 +36,13 @@ type TokenValue<R extends LexerRulesBase[string]> =
     : never;
 
 export type LexerToken<Rules extends LexerRulesBase> = {
-  [T in keyof Rules]: {
+  [T in skeyof<Rules>]: {
     type: T;
     value: TokenValue<Rules[T]>;
     source: string;
     location: Location;
   };
-}[keyof Rules];
+}[skeyof<Rules>];
 
 export type LexerModuleToken<M extends LexerModule> =
   M extends LexerModule<infer Rs>
@@ -68,10 +74,11 @@ export const createLexer = <Rules extends LexerRulesBase>(rules: Rules):
 
   return {
     run: (input) => {
-      let unprocessed = input;
+      let unprocessed = input.content;
       const lHandler = createLocationHandler();
 
       return {
+        source: input.source,
         next: () => {
           if (unprocessed === '') {
             return { value: undefined, done: true };

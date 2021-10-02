@@ -1,7 +1,8 @@
-import { CacheContext, CacheEntry } from './cache';
+import { CacheContext } from './cache';
 import { ExtendedRDParser } from './common.types';
 import { UnrestrainedLeftRecursion } from './errors';
 import { ConsumeHandle } from './handles';
+import { ParseCache } from './parse-cache';
 
 /*
   requires that all parsers be *pure* & *referentially transparent*
@@ -10,13 +11,14 @@ import { ConsumeHandle } from './handles';
 */
 
 export const lrec = <H extends ConsumeHandle, C, As extends unknown[], R>(parser: ExtendedRDParser<H, C, As, R>): ExtendedRDParser<H, C, As, R> => {
-  const cache = new Map<number, CacheEntry<R>>();
+  const cache = new ParseCache<R>();
 
   return (handle, context: C & CacheContext, ...args) => {
 
     const start = handle.mark();
+    const cacheKey = ParseCache.key(handle.source, start);
 
-    const entry = cache.get(start.position);
+    const entry = cache.get(cacheKey);
     if (entry) {
       if ('error' in entry) {
         throw entry.error;
@@ -26,7 +28,7 @@ export const lrec = <H extends ConsumeHandle, C, As extends unknown[], R>(parser
       }
     }
 
-    cache.set(start.position, { error: new UnrestrainedLeftRecursion() });
+    cache.set(cacheKey, { error: new UnrestrainedLeftRecursion() });
     const base = parser(handle, context, ...args);
     let prev = { node: base, end: handle.mark() };
 
@@ -43,7 +45,7 @@ export const lrec = <H extends ConsumeHandle, C, As extends unknown[], R>(parser
       try {
         handle.reset(start);
 
-        cache.set(start.position, prev);
+        cache.set(cacheKey, prev);
         const node = parser(handle, contextWithCache, ...args);
 
         const end = handle.mark();
@@ -58,7 +60,7 @@ export const lrec = <H extends ConsumeHandle, C, As extends unknown[], R>(parser
       }
     }
 
-    cache.delete(start.position);
+    cache.delete(cacheKey);
     handle.reset(prev.end);
     return prev.node;
   };

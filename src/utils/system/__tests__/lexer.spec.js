@@ -1,8 +1,17 @@
 import { createLexer } from '../lexer';
 import { runIterator } from '&test/utils/iterator';
 import { catchError } from '&test/utils/error';
+import { createSource } from '&test/utils/input';
+import { Input } from '../input';
 
 const loc = (line, column) => ({ location: { line, column } });
+
+const run = (lexer, content) => {
+  const input = Input.fromString(createSource(), content);
+
+  const iterator = lexer.run(input);
+  return runIterator(iterator);
+};
 
 it('extracts tokens from input', () => {
   const lexer = createLexer({
@@ -12,8 +21,7 @@ it('extracts tokens from input', () => {
     space: /\s+/
   });
 
-  const iterator = lexer.run('(hello there)');
-  const result = runIterator(iterator);
+  const result = run(lexer, '(hello there)');
 
   expect(result).toEqual([
     { type: '(', source: '(', ...loc(1, 1) },
@@ -30,8 +38,7 @@ it('tracks newlines in locations', () => {
     space: /\s+/
   });
 
-  const iterator = lexer.run('hello there\n\nnice to  meet \n you');
-  const result = runIterator(iterator);
+  const result = run(lexer, 'hello there\n\nnice to  meet \n you');
 
   expect(result).toEqual([
     { type: 'word', value: 'hello', source: 'hello', ...loc(1, 1) },
@@ -55,8 +62,7 @@ it('selects the longest match', () => {
     space: /\s+/
   });
 
-  const iterator = lexer.run('let letter');
-  const result = runIterator(iterator);
+  const result = run(lexer, 'let letter');
 
   expect(result).toEqual([
     { type: 'let', source: 'let', ...loc(1, 1) },
@@ -71,8 +77,7 @@ it('throws an error if it cannot match a token', () => {
     space: /\s+/
   });
 
-  const iterator = lexer.run('hello 123');
-  const error = catchError(() => runIterator(iterator));
+  const error = catchError(() => run(lexer, 'hello 123'));
 
   expect(error).toBeDefined();
 });

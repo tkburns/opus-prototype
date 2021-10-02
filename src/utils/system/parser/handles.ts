@@ -1,4 +1,5 @@
-import { TokenBase } from '../lexer';
+import { Source } from '../input';
+import { TokenBase, TokenIterator } from '../lexer';
 import { TokenMismatch, UnexpectedEOI } from './errors';
 
 /* ------------------------------------- */
@@ -62,6 +63,8 @@ const Position = {
 type Matching<T extends TokenBase, N extends T['type']> = T & { type: N };
 
 export interface ConsumeHandle<T extends TokenBase = TokenBase> {
+  source: Source;
+
   mark: Position['mark'];
   reset: Position['reset'];
 
@@ -74,7 +77,9 @@ export interface ConsumeHandle<T extends TokenBase = TokenBase> {
 }
 
 export const ConsumeHandle = {
-  create<T extends TokenBase>(iterator: Iterator<T, undefined>): ConsumeHandle<T> {
+  create<T extends TokenBase>(iterator: TokenIterator<T>): ConsumeHandle<T> {
+    const source = iterator.source;
+
     const input = IteratorInput.create(iterator);
     const position = Position.create();
 
@@ -124,6 +129,6 @@ export const ConsumeHandle = {
         : false;
     };
 
-    return { mark, reset, consume, peek, peekEOI, consumeEOI };
+    return { source, mark, reset, consume, peek, peekEOI, consumeEOI };
   }
 };

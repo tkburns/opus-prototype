@@ -88,50 +88,46 @@ const createExpressionParser = (precedencedRules) => {
 };
 
 
-describe('precedented', () => {
-  const add = rules.binary('+', lassoc);
-  const sub = rules.binary('-', lassoc);
+const add = rules.binary('+', lassoc);
+const sub = rules.binary('-', lassoc);
 
-  const mult = rules.binary('*', lassoc);
-  const div = rules.binary('/', lassoc);
+const mult = rules.binary('*', lassoc);
+const div = rules.binary('/', lassoc);
 
-  const append = rules.binary(':', rassoc);
-  const app = rules.apply(lassoc);
+const append = rules.binary(':', rassoc);
+const app = rules.apply(lassoc);
 
-  const parser = createExpressionParser([
-    [add, sub],
-    [mult, div],
-    [append],
-    [app],
-    [rules.parens, rules.pure(a)],
-  ]);
+const parser = createExpressionParser([
+  [add, sub],
+  [mult, div],
+  [append],
+  [app],
+  [rules.parens, rules.pure(a)],
+]);
 
-  it('respects precedence', () => {
-    expect(run(parser, 'a + a * a : a (a + a * a : a a)'))
-      .toEqual('a + (a * (a : (a (a + (a * (a : (a a)))))))');
+it('respects precedence', () => {
+  expect(run(parser, 'a + a * a : a (a + a * a : a a)'))
+    .toEqual('a + (a * (a : (a (a + (a * (a : (a a)))))))');
 
-    // TODO - multiple runs are failing because state persists beyond run -> cache/lrec isn't cleared
-    // expect(run(parser, '(a a : a / a - a) a : a / a - a'))
-    //   .toEqual('(((((((a a) : a) / a) - a) a) : a) / a) - a');
+  expect(run(parser, '(a a : a / a - a) a : a / a - a'))
+    .toEqual('(((((((a a) : a) / a) - a) a) : a) / a) - a');
 
-    // expect(run(parser, 'a + a * a + a (a - a + a) / a'))
-    //   .toEqual('(a + (a * a)) + ((a ((a - a) + a)) / a)');
-  });
+  expect(run(parser, 'a + a * a + a (a - a + a) / a'))
+    .toEqual('(a + (a * a)) + ((a ((a - a) + a)) / a)');
+});
 
-  it('emulates associativity with precedence', () => {
-    expect(run(parser, 'a + a + a + a'))
-      .toEqual('((a + a) + a) + a');
+it('emulates associativity with precedence', () => {
+  expect(run(parser, 'a + a + a + a'))
+    .toEqual('((a + a) + a) + a');
 
-    expect(run(parser, 'a : a : a : a'))
-      .toEqual('a : (a : (a : a))');
-  });
+  expect(run(parser, 'a : a : a : a'))
+    .toEqual('a : (a : (a : a))');
+});
 
-  it('supports alternating associativity', () => {
-    expect(run(parser, 'a + a - a : a : a + a - a'))
-      .toEqual('(((a + a) - (a : (a : a))) + a) - a');
+it('supports alternating associativity', () => {
+  expect(run(parser, 'a + a - a : a : a + a - a'))
+    .toEqual('(((a + a) - (a : (a : a))) + a) - a');
 
-    // TODO - multiple runs are failing because state persists beyond run -> cache/lrec isn't cleared
-    // expect(run(parser, 'a * a / a : a : a a a'))
-    //   .toEqual('(a * a) / (a : (a : ((a a) a)))');
-  });
+  expect(run(parser, 'a * a / a : a : a a a'))
+    .toEqual('(a * a) / (a : (a : ((a a) a)))');
 });

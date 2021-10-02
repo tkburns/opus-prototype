@@ -28,5 +28,9 @@ module.exports = {
     'html'
   ],
   coverageDirectory: './reports/coverage',
-  collectCoverageFrom: ['./src/**/*.{ts,js}', '!**/@types/**']
+  collectCoverageFrom: [
+    './src/**/*.{ts,js}',
+    '!**/@types/**',
+    '!**/__tests__/**'
+  ]
 };

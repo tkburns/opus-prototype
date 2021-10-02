@@ -1,6 +1,7 @@
 import type { RDParser } from './common.types';
 import { ParseError } from './errors';
 import { ConsumeHandle, Mark } from './handles';
+import { ParseCache } from './parse-cache';
 
 export type CacheEntry<R> =
   { node: R; end: Mark } |
@@ -13,13 +14,14 @@ export interface CacheContext {
 }
 
 export const cached = <H extends ConsumeHandle, C, R>(parser: RDParser<H, C, R>): RDParser<H, C, R> => {
-  const cache = new Map<number, CacheEntry<R>>();
+  const cache = new ParseCache<R>();
 
   return (handle, context: C & CacheContext) => {
     const start = handle.mark();
+    const cacheKey = ParseCache.key(handle.source, start);
 
     if (!context?.cache?.reevaluate) {
-      const entry = cache.get(start.position);
+      const entry = cache.get(cacheKey);
       if (entry) {
         if ('error' in entry) {
           throw entry.error;
@@ -33,12 +35,12 @@ export const cached = <H extends ConsumeHandle, C, R>(parser: RDParser<H, C, R>)
     try {
       const node = parser(handle, context);
       const end = handle.mark();
-      cache.set(start.position, { node, end });
+      cache.set(cacheKey, { node, end });
 
       return node;
     } catch (error) {
       if (error instanceof ParseError) {
-        cache.set(start.position, { error });
+        cache.set(cacheKey, { error });
       }
 
       throw error;
