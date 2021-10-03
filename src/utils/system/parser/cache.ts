@@ -9,9 +9,18 @@ export type CacheEntry<R> =
 
 export interface CacheContext {
   cache?: {
-    reevaluate?: boolean;
+    reevaluate?: boolean | Mark[];
   };
 }
+
+const shouldReevaluate = (context: CacheContext, mark: Mark): boolean => {
+  const reevaluate = context?.cache?.reevaluate;
+  if (Array.isArray(reevaluate)) {
+    return reevaluate.some(m => m.position === mark.position);
+  } else {
+    return !!reevaluate;
+  }
+};
 
 export const cached = <H extends ConsumeHandle, C, R>(parser: RDParser<H, C, R>): RDParser<H, C, R> => {
   const cache = new ParseCache<R>();
@@ -20,7 +29,7 @@ export const cached = <H extends ConsumeHandle, C, R>(parser: RDParser<H, C, R>)
     const start = handle.mark();
     const cacheKey = ParseCache.key(handle.source, start);
 
-    if (!context?.cache?.reevaluate) {
+    if (!shouldReevaluate(context, start)) {
       const entry = cache.get(cacheKey);
       if (entry) {
         if ('error' in entry) {

@@ -139,42 +139,96 @@ it('caches based on position/mark', () => {
   expect(rawA).toHaveBeenCalledTimes(2);
 });
 
-it('forces cache to reevaluate rule', () => {
-  const start = (handle, ctx) => {
-    const child = choice(handle, ctx, [
-      () => node(handle, { ...ctx, tokenType: 'b', ruleCount: 1 }),
-      () => node(handle, { ...ctx, tokenType: 'c', ruleCount: 2 }),
-      () => node(handle, { ...ctx, tokenType: 'c', ruleCount: 3, cache: { reevaluate: true } })
-    ]);
+describe('reevaluate', () => {
+  let count = {};
+  const createCached = (name, rule) => cached((handle, context) => {
+    count[name] = (count[name] ?? 0) + 1;
 
-    handle.consumeEOI();
+    const node = rule(handle, context);
 
-    return {
-      type: 'start',
-      children: [child]
+    return { ...node, count: count[name] };
+  });
+
+  const cachedA = createCached('a', a);
+  const cachedB = createCached('b', b);
+  const cachedC = createCached('c', c);
+  const cachedD = createCached('d', d);
+
+  const nodes = (handle, context) => choice(handle, context, [
+    (h, c) => {
+      const n1 = cachedA(h, c);
+      const n2 = cachedB(h, c);
+      const n3 = cachedC(h, c);
+      return [n1, n2, n3];
+    },
+    (h, c) => {
+      const n1 = cachedA(h, c);
+      const n2 = cachedB(h, c);
+      const n3 = cachedD(h, c);
+      return [n1, n2, n3];
+    },
+  ]);
+
+  beforeEach(() => {
+    count = {};
+  });
+
+  it('forces cache to reevaluate entire subtree', () => {
+    const start = (handle, ctx) => {
+      const cacheContext = { ...ctx, cache: { reevaluate: true } };
+
+      const children = nodes(handle, cacheContext);
+
+      handle.consumeEOI();
+
+      return {
+        type: 'start',
+        children
+      };
     };
-  };
 
-  const rawNode = jest.fn((handle, ctx) => {
-    const tokenType = ctx.tokenType ?? 'a';
+    const parser = createRDParser(start);
 
-    const token = handle.consume(tokenType);
-    return { type: 'node', token, ruleCount: ctx.ruleCount };
+    const input = tokenIterator(['a', 'b', 'd']);
+    const result = parser.run(input);
+
+    expect(result).toEqual({
+      type: 'start',
+      children: [
+        { type: 'a', token: input.tokens[0], count: 2 },
+        { type: 'b', token: input.tokens[1], count: 2 },
+        { type: 'd', token: input.tokens[2], count: 1 },
+      ]
+    });
   });
-  const node = cached(rawNode);
 
-  const parser = createRDParser(start);
+  it('forces cache to reevaluate rule base on mark', () => {
+    const start = (handle, ctx) => {
+      const mark = handle.mark();
+      const cacheContext = { ...ctx, cache: { reevaluate: [mark] } };
 
-  const input = tokenIterator(['c']);
-  const result = parser.run(input);
+      const children = nodes(handle, cacheContext);
 
-  expect(result).toEqual({
-    type: 'start',
-    children: [
-      { type: 'node', token: input.tokens[0], ruleCount: 3 },
-    ]
+      handle.consumeEOI();
+
+      return {
+        type: 'start',
+        children
+      };
+    };
+
+    const parser = createRDParser(start);
+
+    const input = tokenIterator(['a', 'b', 'd']);
+    const result = parser.run(input);
+
+    expect(result).toEqual({
+      type: 'start',
+      children: [
+        { type: 'a', token: input.tokens[0], count: 2 },
+        { type: 'b', token: input.tokens[1], count: 1 },
+        { type: 'd', token: input.tokens[2], count: 1 },
+      ]
+    });
   });
-  expect(rawNode).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ tokenType: 'b', ruleCount: 1 }));
-  expect(rawNode).not.toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ tokenType: 'c', ruleCount: 2 }));
-  expect(rawNode).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ tokenType: 'c', ruleCount: 3 }));
 });

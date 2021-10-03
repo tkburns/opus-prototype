@@ -36,7 +36,7 @@ export const lrec = <H extends ConsumeHandle, C, As extends unknown[], R>(parser
       ...context,
       cache: {
         ...context?.cache,
-        reevaluate: true
+        reevaluate: [start]
       }
     };
 
