@@ -29,7 +29,14 @@ export const lrec = <H extends ConsumeHandle, C, As extends unknown[], R>(parser
     }
 
     cache.set(cacheKey, { error: new UnrestrainedLeftRecursion() });
-    const base = parser(handle, context, ...args);
+
+    let base: R;
+    try {
+      base = parser(handle, context, ...args);
+    } catch (e: unknown) {
+      cache.delete(cacheKey);
+      throw e;
+    }
     let prev = { node: base, end: handle.mark() };
 
     const contextWithCache = {
