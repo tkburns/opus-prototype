@@ -1,6 +1,7 @@
 import { Source } from '../input';
 import { TokenBase, TokenIterator } from '../lexer';
 import { TokenMismatch, UnexpectedEOI } from './errors';
+import { Mark } from './mark';
 
 /* ------------------------------------- */
 
@@ -35,7 +36,6 @@ const IteratorInput = {
 
 /* ------------------------------------- */
 
-export type Mark = { position: number };
 export interface Position {
   current: () => number;
   advance: () => void;
@@ -45,14 +45,19 @@ export interface Position {
 }
 
 const Position = {
-  create(): Position {
+  create(source: Source): Position {
     let position = 0;
 
     const current = () => position;
     const advance = () => { position += 1; };
 
-    const mark = () => ({ position });
-    const reset = (m: Mark) => { position = m.position; };
+    const mark = () => ({ position, source });
+    const reset = (m: Mark) => {
+      if (m.source !== source) {
+        throw new Error('cannot reset to a mark generated from a different source');
+      }
+      position = m.position;
+    };
 
     return { current, advance, mark, reset };
   }
@@ -81,7 +86,7 @@ export const ConsumeHandle = {
     const source = iterator.source;
 
     const input = IteratorInput.create(iterator);
-    const position = Position.create();
+    const position = Position.create(source);
 
     const mark = position.mark;
     const reset = position.reset;

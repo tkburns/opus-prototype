@@ -1,6 +1,5 @@
 import { ParseError } from '.';
-import { Source } from '../input';
-import { Mark } from './handles';
+import { Mark, serializeMark } from './mark';
 
 export type CacheEntry<R> =
   { node: R; end: Mark } |
@@ -9,7 +8,7 @@ export type CacheEntry<R> =
 type CacheKey = string & { __brand: 'parse-cache-key' };
 
 export class ParseCache<T> extends Map<CacheKey, CacheEntry<T>> {
-  static key(source: Source, mark: Mark): CacheKey {
-    return `${source}:${mark.position}` as CacheKey;
+  static key(mark: Mark): CacheKey {
+    return serializeMark(mark) as CacheKey;
   }
 }

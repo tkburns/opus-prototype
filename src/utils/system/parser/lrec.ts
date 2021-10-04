@@ -1,7 +1,9 @@
+import { Comparison } from '&/utils/comparison';
 import { CacheContext } from './cache';
 import { ExtendedRDParser } from './common.types';
 import { UnrestrainedLeftRecursion } from './errors';
 import { ConsumeHandle } from './handles';
+import { compareMarks } from './mark';
 import { ParseCache } from './parse-cache';
 
 /*
@@ -16,7 +18,7 @@ export const lrec = <H extends ConsumeHandle, C, As extends unknown[], R>(parser
   return (handle, context: C & CacheContext, ...args) => {
 
     const start = handle.mark();
-    const cacheKey = ParseCache.key(handle.source, start);
+    const cacheKey = ParseCache.key(start);
 
     const entry = cache.get(cacheKey);
     if (entry) {
@@ -56,7 +58,7 @@ export const lrec = <H extends ConsumeHandle, C, As extends unknown[], R>(parser
         const node = parser(handle, contextWithCache, ...args);
 
         const end = handle.mark();
-        if (end.position > prev.end.position) {
+        if (compareMarks(end, prev.end) === Comparison.GREATER) {
           prev = { node, end };
         } else {
           failed = true;
