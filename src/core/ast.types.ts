@@ -4,7 +4,7 @@ export type AST = Program;
 export type Node = (
   Program |
   Declaration |
-  FuncCall |
+  FuncApplication |
   Func |
   Tuple |
   Name |
@@ -26,7 +26,7 @@ export type Declaration = {
 };
 
 export type Expression = (
-  FuncCall |
+  FuncApplication |
   Func |
   Tuple |
   Name |
@@ -35,8 +35,8 @@ export type Expression = (
   Text
 );
 
-export type FuncCall = {
-  type: 'function-call';
+export type FuncApplication = {
+  type: 'function-application';
   func: Expression;
   arg: Expression;
 }

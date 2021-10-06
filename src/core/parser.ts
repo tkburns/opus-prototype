@@ -12,9 +12,15 @@ type ExtendedRDParser<Node, As extends unknown[], C = object> =
   Base.ExtendedRDParser<ConsumeHandle<FilteredToken>, C, As, Node>;
 
 const program: RDParser<AST.Program> = (handle, ctx) => {
-  const [entries, error] = repeated(handle, ctx, () =>
-    choice(handle, ctx, [declaration, expression])
-  );
+  const [entries, error] = repeated(handle, ctx, () => {
+    const entry = choice(handle, ctx, [declaration, expression]);
+
+    optional(handle, ctx, () => {
+      handle.consume(';');
+    });
+
+    return entry;
+  });
 
   try {
     handle.consumeEOI();
@@ -43,7 +49,7 @@ const declaration: RDParser<AST.Declaration> = cached((handle, ctx) => {
 const expression: ExtendedRDParser<AST.Expression, [number?]> = lrec((handle, ctx, precedence = 0) => {
   return precedented(handle, ctx, precedence, [
     [func],
-    [funcCall],
+    [funcApplication],
     [parenthesizedExpression, tuple, name, atom, number, text]
   ]);
 });
@@ -55,15 +61,12 @@ const parenthesizedExpression: RDParser<AST.Expression> = cached((handle, ctx) =
   return expr;
 });
 
-const funcCall: RDParser<AST.FuncCall, PrecedenceContext> = cached((handle, ctx) => {
+const funcApplication: RDParser<AST.FuncApplication, PrecedenceContext> = cached((handle, ctx) => {
   const func = expression(handle, ctx, ctx.precedence);
-
-  handle.consume('(');
-  const arg = expression(handle, ctx, 0);
-  handle.consume(')');
+  const arg = expression(handle, ctx, ctx.precedence + 1);
 
   return {
-    type: 'function-call',
+    type: 'function-application',
     func,
     arg,
   };

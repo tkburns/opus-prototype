@@ -11,6 +11,7 @@ export const lexer = createLexer({
   '=': '=',
 
   ',': ',',
+  ';': ';',
 
   '=>': '=>',
   '.': '.',

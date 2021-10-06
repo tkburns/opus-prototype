@@ -13,7 +13,7 @@ const walkers: Walkers<AST.Node, string> = {
   'declaration': (node, process) =>
     `const ${process(node.name)} = ${process(node.expression)}`,
 
-  'function-call': (node, process) =>
+  'function-application': (node, process) =>
     `${process(node.func)}(${process(node.arg)})`,
   'function': (node, process) =>
     `(${process(node.arg)}) => ${process(node.body)}`,

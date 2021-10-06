@@ -1,16 +1,21 @@
+(*
+  semicolon required at the end of each declaration & top level expression (except the last),
+  otherwise it's parsed as fn application and would swallow the beginning of the next line
+*)
+
 (* declaration/lambda *)
-label = n => ("number", n)
+label = n => ("number", n);
 
 (* multiple args *)
-group = a => b => (a, b)
+group = a => b => (a, b);
 
 (* application *)
-label(10)
+label 10;
 
 (* sequential application *)
-bar(baz(x))
+bar (baz x);
 
 (* multiple args *)
-foo(a)(b)(c)
+foo a b c;
 
-group(label(1))(label(2))
+group (label 1) (label 2);

@@ -1,12 +1,20 @@
-num = 12
-label = n => ("number", n)
+(*
+  semicolon required at the end of each declaration & top level expression (except the last),
+  otherwise it's parsed as fn application and would swallow the beginning of the next line
+*)
+
+num = 12;
+label = n => ("number", n);
 
 (* a comment *)
-labeledNum = label(num)
-print((* inline comment *)labeledNum)
+labeledNum = label num;
+print (* inline comment *) labeledNum;
 
-atom = :thing
-print(atom)
+atom = :thing;
+print atom;
 
-foo(a)(b)(c)
-bar(baz(x))
+foo a b c;
+bar (baz x);
+
+(* testing precedence *)
+precedence = a => b (c => d) (e, f);
