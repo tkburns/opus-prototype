@@ -3,9 +3,13 @@ import { FilteredToken } from './lexer';
 import type * as AST from './ast.types';
 import { lrec } from '&/utils/system/parser/lrec';
 import { ConsumeHandle } from '&/utils/system/parser/handles';
+import type * as Base from '&/utils/system/parser/common.types';
 import { cached } from '&/utils/system/parser/cache';
+import { PrecedenceContext, precedented } from '&/utils/system/parser/precedence';
 
-type RDParser<Node, C = object> = (handle: ConsumeHandle<FilteredToken>, context: C) => Node;
+type RDParser<Node, C = object> = Base.RDParser<ConsumeHandle<FilteredToken>, C, Node>;
+type ExtendedRDParser<Node, As extends unknown[], C = object> =
+  Base.ExtendedRDParser<ConsumeHandle<FilteredToken>, C, As, Node>;
 
 const program: RDParser<AST.Program> = (handle, ctx) => {
   const [entries, error] = repeated(handle, ctx, () =>
@@ -36,76 +40,52 @@ const declaration: RDParser<AST.Declaration> = cached((handle, ctx) => {
   };
 });
 
-const expression: RDParser<AST.Expression> = cached((handle, ctx) => {
-  return choice(handle, ctx, [
-    parenthesizedExpression,
-    funcCall,
-    func,
-    tuple,
-    name,
-    atom,
-    number,
-    text,
+const expression: ExtendedRDParser<AST.Expression, [number?]> = lrec((handle, ctx, precedence = 0) => {
+  return precedented(handle, ctx, precedence, [
+    [func],
+    [funcCall],
+    [parenthesizedExpression, tuple, name, atom, number, text]
   ]);
 });
-
-const parenthesizedExpression: RDParser<AST.Expression> = (handle, ctx) => {
+const parenthesizedExpression: RDParser<AST.Expression> = cached((handle, ctx) => {
   handle.consume('(');
-  const expr = expression(handle, ctx);
+  const expr = expression(handle, ctx, 0);
   handle.consume(')');
 
   return expr;
-};
-
-const funcCall: RDParser<AST.FuncCall> = lrec((handle, ctx) => {
-  const func = expression(handle, ctx);
-
-  // require at least one instance
-  const [args, argError] = repeated(handle, ctx, () => {
-    handle.consume('(');
-    const arg = expression(handle, ctx);
-    handle.consume(')');
-
-    return arg;
-  });
-
-  if (args.length === 0) {
-    throw argError;
-  }
-
-  const firstCall: AST.FuncCall = {
-    type: 'function-call',
-    func,
-    arg: args[0],
-  };
-
-  return args.slice(1).reduce<AST.FuncCall>(
-    (funcNode, nextArg) => ({
-      type: 'function-call',
-      func: funcNode,
-      arg: nextArg,
-    }),
-    firstCall
-  );
 });
 
-const func: RDParser<AST.Func> = (handle, ctx) => {
+const funcCall: RDParser<AST.FuncCall, PrecedenceContext> = cached((handle, ctx) => {
+  const func = expression(handle, ctx, ctx.precedence);
+
+  handle.consume('(');
+  const arg = expression(handle, ctx, 0);
+  handle.consume(')');
+
+  return {
+    type: 'function-call',
+    func,
+    arg,
+  };
+});
+
+const func: RDParser<AST.Func, PrecedenceContext> = cached((handle, ctx) => {
   const arg = name(handle, ctx);
   handle.consume('=>');
-  const expr = expression(handle, ctx);
+  const expr = expression(handle, ctx, ctx.precedence);
 
   return {
     type: 'function',
     arg,
     body: expr,
   };
-};
+});
 
-const tuple: RDParser<AST.Tuple> = (handle, ctx) => {
+const tuple: RDParser<AST.Tuple, PrecedenceContext> = cached((handle, ctx) => {
   handle.consume('(');
 
   const [members] = repeated(handle, ctx, () => {
-    const member = expression(handle, ctx);
+    const member = expression(handle, ctx, ctx.precedence);
     optional(handle, ctx, () => {
       handle.consume(',');
     });
@@ -119,7 +99,7 @@ const tuple: RDParser<AST.Tuple> = (handle, ctx) => {
     type: 'tuple',
     members,
   };
-};
+});
 
 const name: RDParser<AST.Name> = (handle) => {
   const token = handle.consume('name');
