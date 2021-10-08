@@ -51,7 +51,10 @@ module.exports = {
 
   overrides: [
     {
-      files: ['*.spec.[jt]s'],
+      files: [
+        '*.spec.[jt]s',
+        '**/__tests__/**'
+      ],
       plugins: [
         'jest'
       ],

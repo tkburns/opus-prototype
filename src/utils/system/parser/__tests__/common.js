@@ -1,3 +1,5 @@
+import { createSource } from '&test/utils/input';
+
 export const tokens = (words) => words
   .reduce(
     ({ list, nextLoc: loc }, text) => {
@@ -17,7 +19,10 @@ export const tokens = (words) => words
 export const tokenIterator = (words) => {
   const tokenList = tokens(words);
   const iterator = tokenList[Symbol.iterator]();
+
   iterator.tokens = tokenList;
+  iterator.source = createSource();
+
   return iterator;
 };
 

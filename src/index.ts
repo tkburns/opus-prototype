@@ -4,6 +4,7 @@ import minimist from 'minimist';
 import fs from 'fs';
 import path from 'path';
 import { core } from './core';
+import { Input } from './utils/system/input';
 
 const version = '0.0.0-development';
 const help =
@@ -47,8 +48,9 @@ if (flags.help || flags._.length !== 1) {
 
   try {
     const fileStr = fs.readFileSync(path.resolve(file), 'utf-8');
+    const input = Input.fromString(path.resolve(file), fileStr);
 
-    const result = core(flags.output).run(fileStr);
+    const result = core(flags.output).run(input);
 
     process.stdout.write(result + '\n');
   } catch (e: unknown) {

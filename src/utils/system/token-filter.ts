@@ -1,4 +1,4 @@
-import type { TokenBase } from './lexer';
+import type { TokenBase, TokenIterator } from './lexer';
 import { Module } from './system';
 
 type _RemoveTypes<Token extends TokenBase, Ignored extends string> =
@@ -11,7 +11,7 @@ type RemoveTypes<Token extends TokenBase, Ignored extends string> =
 
 
 type FilterModule<Token extends TokenBase = never, Filtered extends TokenBase = TokenBase> =
-  Module<Iterator<Token, undefined>, Iterator<Filtered, undefined>>;
+  Module<TokenIterator<Token>, TokenIterator<Filtered>>;
 
 export type FilterModuleToken<M extends FilterModule> =
   M extends FilterModule<never, infer Filtered>
@@ -20,7 +20,7 @@ export type FilterModuleToken<M extends FilterModule> =
 
 
 type UnreifiedTokenFilterModule<Ignored extends string> = {
-  run: <Token extends TokenBase>(it: Iterator<Token, undefined>) => Iterator<RemoveTypes<Token, Ignored>, undefined>;
+  run: <Token extends TokenBase>(it: TokenIterator<Token>) => TokenIterator<RemoveTypes<Token, Ignored>>;
 }
 
 type GenericTokenFilterModule<Ignored extends string> = UnreifiedTokenFilterModule<Ignored> & {
@@ -35,6 +35,7 @@ export const createTokenFilter = <Ignored extends string>(ignoredTokens: Ignored
   const unreified: UnreifiedTokenFilterModule<Ignored> = {
     run: (iterator) => {
       return {
+        source: iterator.source,
         next: () => nextValueableToken(iterator, ignoredTokens)
       };
     },

@@ -1,6 +1,9 @@
+import { Comparison } from '&/utils/comparison';
 import type { RDParser } from './common.types';
 import { ParseError } from './errors';
-import { ConsumeHandle, Mark } from './handles';
+import { ConsumeHandle } from './handles';
+import { compareMarks, Mark } from './mark';
+import { ParseCache } from './parse-cache';
 
 export type CacheEntry<R> =
   { node: R; end: Mark } |
@@ -8,18 +11,28 @@ export type CacheEntry<R> =
 
 export interface CacheContext {
   cache?: {
-    reevaluate?: boolean;
+    reevaluate?: boolean | Mark[];
   };
 }
 
+const shouldReevaluate = (context: CacheContext, mark: Mark): boolean => {
+  const reevaluate = context?.cache?.reevaluate;
+  if (Array.isArray(reevaluate)) {
+    return reevaluate.some(m => compareMarks(m, mark) === Comparison.EQUAL);
+  } else {
+    return !!reevaluate;
+  }
+};
+
 export const cached = <H extends ConsumeHandle, C, R>(parser: RDParser<H, C, R>): RDParser<H, C, R> => {
-  const cache = new Map<number, CacheEntry<R>>();
+  const cache = new ParseCache<R>();
 
   return (handle, context: C & CacheContext) => {
     const start = handle.mark();
+    const cacheKey = ParseCache.key(start);
 
-    if (!context?.cache?.reevaluate) {
-      const entry = cache.get(start.position);
+    if (!shouldReevaluate(context, start)) {
+      const entry = cache.get(cacheKey);
       if (entry) {
         if ('error' in entry) {
           throw entry.error;
@@ -33,12 +46,12 @@ export const cached = <H extends ConsumeHandle, C, R>(parser: RDParser<H, C, R>)
     try {
       const node = parser(handle, context);
       const end = handle.mark();
-      cache.set(start.position, { node, end });
+      cache.set(cacheKey, { node, end });
 
       return node;
     } catch (error) {
       if (error instanceof ParseError) {
-        cache.set(start.position, { error });
+        cache.set(cacheKey, { error });
       }
 
       throw error;

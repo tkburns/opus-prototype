@@ -1,7 +1,10 @@
-import { CacheContext, CacheEntry } from './cache';
-import { RDParser } from './common.types';
+import { Comparison } from '&/utils/comparison';
+import { CacheContext } from './cache';
+import { ExtendedRDParser } from './common.types';
 import { UnrestrainedLeftRecursion } from './errors';
 import { ConsumeHandle } from './handles';
+import { compareMarks } from './mark';
+import { ParseCache } from './parse-cache';
 
 /*
   requires that all parsers be *pure* & *referentially transparent*
@@ -9,14 +12,15 @@ import { ConsumeHandle } from './handles';
   essentially calculates the fixpoint of the parser given the input (not exactly... only compares the position/mark, not the result)
 */
 
-export const lrec = <H extends ConsumeHandle, C, R>(parser: RDParser<H, C, R>): RDParser<H, C, R> => {
-  const cache = new Map<number, CacheEntry<R>>();
+export const lrec = <H extends ConsumeHandle, C, As extends unknown[], R>(parser: ExtendedRDParser<H, C, As, R>): ExtendedRDParser<H, C, As, R> => {
+  const cache = new ParseCache<R>();
 
-  return (handle, context: C & CacheContext) => {
+  return (handle, context: C & CacheContext, ...args) => {
 
     const start = handle.mark();
+    const cacheKey = ParseCache.key(start);
 
-    const entry = cache.get(start.position);
+    const entry = cache.get(cacheKey);
     if (entry) {
       if ('error' in entry) {
         throw entry.error;
@@ -26,15 +30,22 @@ export const lrec = <H extends ConsumeHandle, C, R>(parser: RDParser<H, C, R>): 
       }
     }
 
-    cache.set(start.position, { error: new UnrestrainedLeftRecursion() });
-    const base = parser(handle, context);
+    cache.set(cacheKey, { error: new UnrestrainedLeftRecursion() });
+
+    let base: R;
+    try {
+      base = parser(handle, context, ...args);
+    } catch (e: unknown) {
+      cache.delete(cacheKey);
+      throw e;
+    }
     let prev = { node: base, end: handle.mark() };
 
     const contextWithCache = {
       ...context,
       cache: {
         ...context?.cache,
-        reevaluate: true
+        reevaluate: [start]
       }
     };
 
@@ -43,11 +54,11 @@ export const lrec = <H extends ConsumeHandle, C, R>(parser: RDParser<H, C, R>): 
       try {
         handle.reset(start);
 
-        cache.set(start.position, prev);
-        const node = parser(handle, contextWithCache);
+        cache.set(cacheKey, prev);
+        const node = parser(handle, contextWithCache, ...args);
 
         const end = handle.mark();
-        if (end.position > prev.end.position) {
+        if (compareMarks(end, prev.end) === Comparison.GREATER) {
           prev = { node, end };
         } else {
           failed = true;
@@ -58,7 +69,7 @@ export const lrec = <H extends ConsumeHandle, C, R>(parser: RDParser<H, C, R>): 
       }
     }
 
-    cache.delete(start.position);
+    cache.delete(cacheKey);
     handle.reset(prev.end);
     return prev.node;
   };

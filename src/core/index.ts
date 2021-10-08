@@ -1,4 +1,5 @@
 import { collect } from '&/utils/system/collect';
+import { Input } from '&/utils/system/input';
 import { system, System } from '&/utils/system/system';
 import { codeGenerator } from './code-generation';
 import { FilteredToken, lexer, Token, tokenFilter } from './lexer';
@@ -6,7 +7,7 @@ import { parser } from './parser';
 import { injectRuntime } from './runtime';
 import { astStringifier, tokenStringifier } from './stringification';
 
-export const core = (output?: string): System<string, string> => {
+export const core = (output?: string): System<Input, string> => {
   if (output === 'all-tokens') {
     return system(
       lexer,
