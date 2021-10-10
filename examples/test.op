@@ -15,6 +15,3 @@ print atom;
 
 foo a b c;
 bar (baz x);
-
-(* testing precedence *)
-precedence = a => b (c => d) (e, f);

@@ -48,9 +48,8 @@ const declaration: RDParser<AST.Declaration> = cached((handle, ctx) => {
 
 const expression: ExtendedRDParser<AST.Expression, [number?]> = lrec((handle, ctx, precedence = 0) => {
   return precedented(handle, ctx, precedence, [
-    [func],
     [funcApplication],
-    [parenthesizedExpression, tuple, name, atom, number, text]
+    [parenthesizedExpression, func, tuple, name, atom, number, text]
   ]);
 });
 const parenthesizedExpression: RDParser<AST.Expression> = cached((handle, ctx) => {
@@ -72,10 +71,10 @@ const funcApplication: RDParser<AST.FuncApplication, PrecedenceContext> = cached
   };
 });
 
-const func: RDParser<AST.Func, PrecedenceContext> = cached((handle, ctx) => {
+const func: RDParser<AST.Func> = cached((handle, ctx) => {
   const arg = name(handle, ctx);
   handle.consume('=>');
-  const expr = expression(handle, ctx, ctx.precedence);
+  const expr = expression(handle, ctx);
 
   return {
     type: 'function',
@@ -84,11 +83,11 @@ const func: RDParser<AST.Func, PrecedenceContext> = cached((handle, ctx) => {
   };
 });
 
-const tuple: RDParser<AST.Tuple, PrecedenceContext> = cached((handle, ctx) => {
+const tuple: RDParser<AST.Tuple> = cached((handle, ctx) => {
   handle.consume('(');
 
   const [members] = repeated(handle, ctx, () => {
-    const member = expression(handle, ctx, ctx.precedence);
+    const member = expression(handle, ctx);
     optional(handle, ctx, () => {
       handle.consume(',');
     });
