@@ -1,4 +1,4 @@
-import { lines } from '&/utils/system/stringification';
+import { code, lines } from '&/utils/system/stringification';
 import { Walkers, createWalkerModule } from '&/utils/system/tree-walker';
 import type * as AST from './ast.types';
 
@@ -22,10 +22,15 @@ const walkers: Walkers<AST.Node, string> = {
       : `(${fn})(${arg})`;
   },
 
-  'match': () => { throw new Error('not implemented'); },
-  'match-clause': () => { throw new Error('not implemented'); },
-  'value-pattern': () => { throw new Error('not implemented'); },
-  'wildcard-pattern': () => { throw new Error('not implemented'); },
+  'match': (node, process) => code`
+    runMatch(${process(node.principal)}, [
+      ${node.clauses.map(process).join(',\n')}
+    ])
+  `,
+  'match-clause': (node, process) =>
+    `[${process(node.pattern)}, () => ${process(node.body)}]`,
+  'value-pattern': (node, process) => `{ type: 'value', value: ${process(node.value)} }`,
+  'wildcard-pattern': () => '{ type: \'wildcard\' }',
 
   'function': (node, process) =>
     `(${process(node.arg)}) => ${process(node.body)}`,

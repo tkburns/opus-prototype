@@ -13,6 +13,7 @@ print (* inline comment *) labeledNum;
 atom = :thing;
 print atom;
 
+(* TODO - the following won't run -> foo/a/b/c/bar/baz/x not defined *)
 foo a b c;
 bar (baz x);
 
