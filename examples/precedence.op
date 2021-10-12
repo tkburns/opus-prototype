@@ -1,0 +1,10 @@
+(* testing precedence *)
+precedence = a => b (c => d) (e, f x);
+
+a => f a;
+
+f g h;
+f (g h);
+f (a => b);
+
+(a => b, c => d);
