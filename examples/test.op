@@ -21,4 +21,6 @@ name = a => a match (
   _ => "other";
 );
 
-print (name atom)
+print (name atom);
+
+(x => x) print num;

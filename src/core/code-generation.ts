@@ -13,8 +13,14 @@ const walkers: Walkers<AST.Node, string> = {
   'declaration': (node, process) =>
     `const ${process(node.name)} = ${process(node.expression)}`,
 
-  'function-application': (node, process) =>
-    `${process(node.func)}(${process(node.arg)})`,
+  'function-application': (node, process) => {
+    const fn = process(node.func);
+    const arg = process(node.arg);
+
+    return ['name', 'function-application'].includes(node.func.type)
+      ? `${fn}(${arg})`
+      : `(${fn})(${arg})`;
+  },
 
   'match': () => { throw new Error('not implemented'); },
   'match-clause': () => { throw new Error('not implemented'); },
