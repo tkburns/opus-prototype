@@ -16,25 +16,14 @@
 const print = (text) => console.log(text);
 
 /*
-  primitive operations used by match
+  opus internals
 */
-
-const runMatch = (principal, clauses) => {
-  for (const [pattern, body] of clauses) {
-    if (matchesPattern(pattern, principal)) {
-      return body();
-    }
-  }
-};
-
-const matchesPattern = (pattern, value) => {
-  if (pattern.type === 'value') {
-    return pattern.value === value;
-  } else if (pattern.type === 'wildcard') {
-    return true;
-  } else {
-    // should never be hit -- the compiler should only produce valid pattern types
-    throw new Error(`'${pattern.type}' is not a valid pattern type`);
+const __opus_internals__ = {
+  /*
+    pattern matchers
+  */
+  match: {
+    value: (subject, target) => subject === target,
   }
 };
 

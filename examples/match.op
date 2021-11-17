@@ -1,0 +1,19 @@
+
+(* inexhaustive/no wildcard match *)
+name = a => a match (
+  :thing => "thing";
+  :stuff => "stuff";
+);
+
+(* match with wildcard *)
+name = a => a match (
+  :thing => "thing";
+  _ => "other";
+);
+
+(* match with unreachable clauses *)
+name = a => a match (
+  :thing => "thing";
+  _ => "other";
+  :stuff => "never reached";
+);

@@ -1,7 +1,8 @@
+import type * as AST from './ast.types';
 import { Module } from '&/utils/system/system';
 import { lines, code } from '&/utils/system/stringification';
-import type * as AST from './ast.types';
 import { transformByType } from '&/utils/system/tree-walker';
+import { last } from '&/utils/list';
 
 
 const program = (node: AST.Program) => lines(
@@ -36,25 +37,59 @@ const funcApplication = (node: AST.FuncApplication) =>{
 };
 
 
-const match = (node: AST.Match) => code`
-  runMatch(${expression(node.principal)}, [
-    ${node.clauses.map(matchClause).map(item => `${item},`)}
-  ])
-`;
+type MatchOptions = { subject: string };
+const match = (node: AST.Match, { subject = 'subject' }: Partial<MatchOptions> = {}) => {
+  const exhaustive = last(node.clauses)?.pattern.type === 'wildcard-pattern';
 
-const matchClause = (node: AST.MatchClause) =>
-  `[${pattern(node.pattern)}, () => ${expression(node.body)}]`;
+  const clauses = node.clauses.map((clause, num) =>
+    matchClause(clause, { subject, exhaustive, last: num === node.clauses.length - 1 })
+  );
 
-const pattern = (node: AST.Pattern) => transformByType(node, {
-  'value-pattern': valuePattern,
+  let body;
+  if (exhaustive) {
+    body = clauses.join(' else ');
+  } else {
+    body = code`
+      ${clauses.join(' else ')} else {
+        throw new Error(\`no match for \${subject}\`);
+      }
+    `;
+  }
+
+  return code`
+    ((${subject}) => {
+      ${body}
+    })(${expression(node.principal)})
+  `;
+};
+
+type MatchClauseOptions = MatchOptions & { exhaustive: boolean; last: boolean }
+const matchClause = (node: AST.MatchClause, options: MatchClauseOptions) => {
+  if (options.exhaustive && options.last && node.pattern.type === 'wildcard-pattern') {
+    return code`
+      {
+        return ${expression(node.body)};
+      }
+    `;
+  } else {
+    return code`
+      if (${pattern(node.pattern, options)}) {
+        return ${expression(node.body)};
+      }
+    `;
+  }
+};
+
+const pattern = (node: AST.Pattern, options: MatchOptions) => transformByType(node, {
+  'value-pattern': n => valuePattern(n, options),
   'wildcard-pattern': wildcardPattern
 });
 
-const valuePattern = (node: AST.ValuePattern) =>
-  `{ type: 'value', value: ${expression(node.value)} }`;
+const valuePattern = (node: AST.ValuePattern, { subject }: MatchOptions) =>
+  `__opus_internals__.match.value(${subject}, ${expression(node.value)})`;
 
 const wildcardPattern = (node: AST.WildcardPattern) =>
-  '{ type: \'wildcard\' }';
+  'true /* wildcard */';
 
 
 const func = (node: AST.Func) =>
