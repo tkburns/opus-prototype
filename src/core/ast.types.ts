@@ -4,9 +4,17 @@ export type AST = Program;
 export type Node = (
   Program |
   Declaration |
+
   FuncApplication |
+
+  Match |
+  MatchClause |
+  ValuePattern |
+  WildcardPattern |
+
   Func |
   Tuple |
+
   Name |
   Atom |
   Numeral |
@@ -27,12 +35,8 @@ export type Declaration = {
 
 export type Expression = (
   FuncApplication |
-  Func |
-  Tuple |
-  Name |
-  Atom |
-  Numeral |
-  Text
+  Match |
+  Literal
 );
 
 export type FuncApplication = {
@@ -40,6 +44,38 @@ export type FuncApplication = {
   func: Expression;
   arg: Expression;
 }
+
+export type Match = {
+  type: 'match';
+  principal: Expression;
+  clauses: MatchClause[];
+}
+
+export type MatchClause = {
+  type: 'match-clause';
+  pattern: Pattern;
+  body: Expression;
+}
+
+export type Pattern = ValuePattern | WildcardPattern;
+
+export type ValuePattern = {
+  type: 'value-pattern';
+  value: Literal;
+}
+
+export type WildcardPattern = {
+  type: 'wildcard-pattern';
+}
+
+export type Literal = (
+  Func |
+  Tuple |
+  Name |
+  Atom |
+  Numeral |
+  Text
+);
 
 export type Func = {
   type: 'function';

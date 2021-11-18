@@ -1,10 +1,14 @@
 (* testing precedence *)
-precedence = a => b (c => d) (e, f x);
+precedence = a => b match (_ => x => y) (c => d) (e, f x);
 
+a => b match (_ => a);
 a => f a;
+
+f b match (_ => a);
 
 f g h;
 f (g h);
 f (a => b);
 
 (a => b, c => d);
+(a match (_ => a), f a);

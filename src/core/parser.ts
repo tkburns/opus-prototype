@@ -48,6 +48,7 @@ const declaration: RDParser<AST.Declaration> = cached((handle, ctx) => {
 
 const expression: ExtendedRDParser<AST.Expression, [number?]> = lrec((handle, ctx, precedence = 0) => {
   return precedented(handle, ctx, precedence, [
+    [match],
     [funcApplication],
     [parenthesizedExpression, func, tuple, name, atom, number, text]
   ]);
@@ -70,6 +71,81 @@ const funcApplication: RDParser<AST.FuncApplication, PrecedenceContext> = cached
     arg,
   };
 });
+
+/* Match */
+
+const match: RDParser<AST.Match, PrecedenceContext> = (handle, ctx) => {
+  const principal = expression(handle, ctx, ctx.precedence);
+  handle.consume('match');
+  const clauses = matchClauses(handle, ctx);
+
+  return {
+    type: 'match',
+    principal,
+    clauses
+  };
+};
+
+const matchClauses: RDParser<AST.MatchClause[]> = (handle, ctx) => {
+  handle.consume('(');
+
+  const [clauses, lastError] = repeated(handle, ctx, () => {
+    const clause = matchClause(handle, ctx);
+
+    optional(handle, ctx, () => {
+      handle.consume(';');
+    });
+
+    return clause;
+  });
+
+  if (clauses.length < 1) {
+    throw lastError;
+  }
+
+  handle.consume(')');
+
+  return clauses;
+};
+
+const matchClause: RDParser<AST.MatchClause> = (handle, ctx) => {
+  const pat = pattern(handle, ctx);
+  handle.consume('=>');
+  const body = expression(handle, ctx);
+
+  return {
+    type: 'match-clause',
+    pattern: pat,
+    body
+  };
+};
+
+const pattern: RDParser<AST.Pattern> = (handle, ctx) =>
+  choice(handle, ctx, [wildcardPattern, valuePattern]);
+
+const valuePattern: RDParser<AST.ValuePattern> = (handle, ctx) => {
+  const value = literal(handle, ctx);
+  return {
+    type: 'value-pattern',
+    value
+  };
+};
+
+const wildcardPattern: RDParser<AST.WildcardPattern> = (handle) => {
+  handle.consume('_');
+  return { type: 'wildcard-pattern' };
+};
+
+const literal: RDParser<AST.Literal> = (handle, ctx) => {
+  return choice(handle, ctx, [
+    func,
+    tuple,
+    name,
+    atom,
+    number,
+    text,
+  ]);
+};
 
 const func: RDParser<AST.Func> = cached((handle, ctx) => {
   const arg = name(handle, ctx);

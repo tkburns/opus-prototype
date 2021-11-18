@@ -19,3 +19,6 @@ bar (baz x);
 foo a b c;
 
 group (label 1) (label 2);
+
+(* calling function literal inline *)
+(x => y => x y) print 5;

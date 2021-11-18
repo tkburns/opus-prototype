@@ -16,6 +16,18 @@
 const print = (text) => console.log(text);
 
 /*
+  opus internals
+*/
+const __opus_internals__ = {
+  /*
+    pattern matchers
+  */
+  match: {
+    value: (subject, target) => subject === target,
+  }
+};
+
+/*
   ---------------------------------
     end of opus runtime
   ---------------------------------

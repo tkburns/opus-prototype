@@ -1,8 +1,21 @@
 import { Module } from './system';
 
-type Typed = {
-  type: string;
+type Typed<Ts extends string = string> = {
+  type: Ts;
 };
+
+type Routes<N extends Typed, R> = {
+  [T in N['type']]: (n: Extract<N, Typed<T>>) => R
+};
+
+export const transformByType = <N extends Typed, Rs extends Routes<N, unknown>>(
+  n: N,
+  routes: Rs
+): ReturnType<Rs[N['type']]> => {
+  const matching = routes[n.type as N['type']];
+  return matching(n as Extract<N, Typed<N['type']>>) as ReturnType<Rs[N['type']]>;
+};
+
 
 export type Walk<T extends Typed, R> = (x: T) => R;
 export type Walker<T extends Typed, N extends T, R> = (x: N, walk: Walk<T, R>) => R;
