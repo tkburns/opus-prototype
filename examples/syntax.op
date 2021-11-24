@@ -1,0 +1,70 @@
+(*
+  A cursory overview of all opus's syntax
+*)
+
+(*
+  a semicolon is required between each declaration/expression in the same block
+  otherwise it will parsed together as one declaration/expression
+*)
+
+(* ------------------- *)
+(* literals *)
+
+boolean = true; (* or `false` *)
+number = 12;
+atom = :hello;
+text = "hello world";
+
+tuple = (atom, text);
+
+(* ------------------- *)
+(* functions *)
+
+pair = a => b => (a, b);
+
+pair 1 2;
+(* = (1, 2) *)
+
+pair (pair 1 2) (pair 3 4);
+(* = ((1, 2), (3, 4)) *)
+
+(* you can also create & call anonymous functions inline *)
+(a => b => (b, a)) 1 2; 
+(* = (2, 1) *)
+
+(* ------------------- *)
+(* pattern matches *)
+
+message = name => name match (
+  :hello => "hello world";
+  :bye => "bye everyone";
+  _ => "other";
+);
+
+(* ------------------- *)
+(* precedence *)
+
+a = :a; b = :b; c = :c; d = :d;
+f = x => x; g = x => x;
+
+x => a match (_ => y => b) (z => c) (d, f x);
+(* is parsed as:
+  x => (
+    (
+      (
+        a match (_ => y => b)
+      ) (z => c)
+    ) (d, (f x))
+  );
+*)
+
+x => x match (_ => x);    (* x => (x match (_ => x)) *)
+x => f x;                 (* x => (f x) *)
+
+f b match (_ => a);       (* (f b) match (_ => a) *)
+
+f g a;                    (* (f g) a *)
+f (g a);                  (* f (g a) *)
+
+(x => a, y => b);         (* ((x => a), (y => b)) *)
+(a match (_ => a), f a);  (* (a match (_ => a), f a) *)
