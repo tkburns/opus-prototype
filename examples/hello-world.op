@@ -2,13 +2,13 @@
   The quintessential "Hello World" program
 *)
 
-print "Hello World"
+!(print "Hello World");
 
 (* ------------------- *)
 (* we can also encapsulate it in a thunk *)
 
-main = {
-  print "Hello World"
-}
+main = msg => (
+  !(print msg)
+);
 
-!main
+!(main "Hello World");
