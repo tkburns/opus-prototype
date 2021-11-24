@@ -12,3 +12,13 @@ main = msg => (
 );
 
 !(main "Hello World");
+
+(* ------------------- *)
+(*
+  the `print` function triggers the IO.write effect;
+  by default it will print to stdout, but we can catch it
+  and instead write to a file
+*)
+
+!(main "Hello World") with
+  IO.file.write './hello-world.txt';

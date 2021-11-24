@@ -41,6 +41,76 @@ message = name => name match (
   _ => "other";
 );
 
+compare = a => b => a match (
+  b => :eq;
+  _ | a < b => :lt;
+  _ | a > b => :gt;
+)
+
+(* ------------------- *)
+(* effects & handlers *)
+
+yield = effect;
+
+numsGenerator = start => end => start match (
+  _ | start < end => (
+    !(yield start);
+    numsGenerator (start + 1) end;
+  );
+  _ => ()
+);
+
+collect = handler (
+  yield v k => (v, k ());
+  final => ();
+);
+
+nums = numsGenerator 1 3 with collect;
+(* nums = (1, (2, (3, ()))) *)
+
+
+(* print is a builtin effect for writing output *)
+log = x => (
+  !(print x);
+  x
+);
+
+log "foo";  (* uses default/builtin handler - prints to stdout *)
+
+log "foo" with
+  IO.file.write './foo.txt';
+(* uses builtin file IO handler - prints to file *)
+
+(* can create a handler inline *)
+log "foo" with handler (
+  print msg k => (msg, k ());
+  final => ();
+);
+(* collects all logs into a linked list & returns it *)
+
+(* ------------------- *)
+(* thunks *)
+
+(*
+  thunks are delayed computations (analogous to functions taking () as the only argument)
+  they can be forced/evaluated with `!`
+*)
+
+(* the default handler for `random` effect returns a number between two given numbers *)
+
+coinFlip = { (!random (1, 2)) == 1 }
+
+allHeads = n => n match (
+  0 => true;
+  _ => !coinFlip && allHeads (n - 1);
+);
+
+allHeads 2;  (* uses builtin random effect handler *)
+
+allHeads 4 with handler (
+  random (min, max) k => k max;
+);  (* always true *)
+
 (* ------------------- *)
 (* precedence *)
 
