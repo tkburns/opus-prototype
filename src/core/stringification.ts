@@ -102,6 +102,7 @@ const walkers: Walkers<AST.Node, string> = {
   ),
   'name': (node) => stringifyLeaf(node),
   'atom': (node) => stringifyLeaf(node, v => `:${v}`),
+  'bool': (node) => stringifyLeaf(node, v => v.toString()),
   'number': (node) => stringifyLeaf(node),
   'text': (node) => stringifyLeaf(node, v => `"${v}"`),
 };

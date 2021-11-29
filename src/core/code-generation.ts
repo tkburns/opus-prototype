@@ -22,6 +22,7 @@ const expression = (node: AST.Expression): string => transformByType(node, {
   tuple,
   name,
   atom,
+  bool,
   number,
   text
 });
@@ -101,6 +102,8 @@ const tuple = (node: AST.Tuple) =>
 const name = (node: AST.Name) => node.value;
 
 const atom = (node: AST.Atom) => `Symbol.for('${node.value}')`;
+
+const bool = (node: AST.Bool) => node.value.toString();
 
 const number = (node: AST.Numeral) => node.token.source;
 
