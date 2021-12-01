@@ -17,6 +17,7 @@ export type Node = (
 
   Name |
   Atom |
+  Bool |
   Numeral |
   Text
 );
@@ -73,6 +74,7 @@ export type Literal = (
   Tuple |
   Name |
   Atom |
+  Bool |
   Numeral |
   Text
 );
@@ -98,6 +100,12 @@ export type Atom = {
   type: 'atom';
   value: string;
   token: TokenMap['atom'];
+};
+
+export type Bool = {
+  type: 'bool';
+  value: boolean;
+  token: TokenMap['bool'];
 };
 
 export type Numeral = {

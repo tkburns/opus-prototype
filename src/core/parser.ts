@@ -50,7 +50,7 @@ const expression: ExtendedRDParser<AST.Expression, [number?]> = lrec((handle, ct
   return precedented(handle, ctx, precedence, [
     [match],
     [funcApplication],
-    [parenthesizedExpression, func, tuple, name, atom, number, text]
+    [parenthesizedExpression, literal]
   ]);
 });
 const parenthesizedExpression: RDParser<AST.Expression> = cached((handle, ctx) => {
@@ -142,6 +142,7 @@ const literal: RDParser<AST.Literal> = (handle, ctx) => {
     tuple,
     name,
     atom,
+    bool,
     number,
     text,
   ]);
@@ -194,6 +195,16 @@ const atom: RDParser<AST.Atom> = (handle) => {
 
   return {
     type: 'atom',
+    value: token.value,
+    token
+  };
+};
+
+const bool: RDParser<AST.Bool> = (handle) => {
+  const token = handle.consume('bool');
+
+  return {
+    type: 'bool',
     value: token.value,
     token
   };
