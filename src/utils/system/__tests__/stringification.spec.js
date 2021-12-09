@@ -101,6 +101,33 @@ describe('code template processor', () => {
     );
   });
 
+  it('supports numbers & booleans in interpolations', () => {
+    expect(code`
+      {
+        ${1},
+        ${true},
+      }
+    `).toEqual(
+      '{\n' +
+      '  1,\n' +
+      '  true,\n' +
+      '}'
+    );
+
+
+    expect(code`
+      {
+        ${[1, true, '  foo']}
+      }
+    `).toEqual(
+      '{\n' +
+      '  1\n' +
+      '  true\n' +
+      '    foo\n' +
+      '}'
+    );
+  });
+
   it('indents with interpolations', () => {
     const cond = 'x === true';
     const body = 'f(y)';
