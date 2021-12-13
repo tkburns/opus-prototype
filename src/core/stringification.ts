@@ -81,7 +81,13 @@ const walkers: Walkers<AST.Node, string> = {
       node.body
     ]
   ),
-  'value-pattern': (node, process) => stringifyBranch(
+  'name-pattern': (node, process) => process(node.name),
+  'tuple-pattern': (node, process) => stringifyBranch(
+    process,
+    node.type,
+    node.members
+  ),
+  'simple-literal-pattern': (node, process) => stringifyBranch(
     process,
     node.type,
     [node.value]

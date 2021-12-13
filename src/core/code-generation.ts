@@ -81,13 +81,31 @@ const matchClause = (node: AST.MatchClause, options: MatchClauseOptions) => {
   }
 };
 
-const pattern = (node: AST.Pattern, options: MatchOptions) => transformByType(node, {
-  'value-pattern': n => valuePattern(n, options),
+const pattern = (node: AST.Pattern, options: MatchOptions): string => transformByType(node, [options], {
+  'name-pattern': namePattern,
+  'tuple-pattern': tuplePattern,
+  'simple-literal-pattern': simpleLiteralPattern,
   'wildcard-pattern': wildcardPattern
 });
 
-const valuePattern = (node: AST.ValuePattern, { subject }: MatchOptions) =>
-  `__opus_internals__.match.value(${subject}, ${expression(node.value)})`;
+const namePattern = (node: AST.NamePattern, { subject }: MatchOptions) =>
+  `__opus_internals__.match.name(${subject}, ${name(node.name)})`;
+
+const tuplePattern = (node: AST.TuplePattern, { subject }: MatchOptions) => {
+  const memberMatches = node.members.map((member, index) => {
+    const subjectMember = `${subject}._${index}`;
+    return `() => ${pattern(member, { subject: subjectMember })}`;
+  });
+
+  return code`
+    __opus_internals__.match.tuple(${subject}, [
+      ${memberMatches.join(',\n')}
+    ])
+  `;
+};
+
+const simpleLiteralPattern = (node: AST.SimpleLiteralPattern, { subject }: MatchOptions) =>
+  `__opus_internals__.match.simpleLiteral(${subject}, ${expression(node.value)})`;
 
 const wildcardPattern = (node: AST.WildcardPattern) =>
   'true /* wildcard */';
@@ -102,8 +120,19 @@ const func = (node: AST.Func) => {
   return `(${name(node.arg)}) => ${body}`;
 };
 
-const tuple = (node: AST.Tuple) =>
-  `[${node.members.map(expression).join(', ')}]`;
+const tuple = (node: AST.Tuple) => {
+  const memberFields = node.members.map((member, index) =>
+    `_${index}: ${expression(member)}`
+  );
+
+  return code`
+    {
+      __opus_kind__: 'tuple',
+      size: ${node.members.length},
+      ${memberFields.join(',\n')}
+    }
+  `;
+};
 
 const name = (node: AST.Name) => node.value;
 
