@@ -93,8 +93,14 @@ const wildcardPattern = (node: AST.WildcardPattern) =>
   'true /* wildcard */';
 
 
-const func = (node: AST.Func) =>
-  `(${name(node.arg)}) => ${expression(node.body)}`;
+const func = (node: AST.Func) => {
+  const isObject = node.body.type === 'tuple';
+  const body = isObject
+    ? `(${expression(node.body)})`
+    : expression(node.body);
+
+  return `(${name(node.arg)}) => ${body}`;
+};
 
 const tuple = (node: AST.Tuple) =>
   `[${node.members.map(expression).join(', ')}]`;
