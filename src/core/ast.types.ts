@@ -9,7 +9,9 @@ export type Node = (
 
   Match |
   MatchClause |
-  ValuePattern |
+  NamePattern |
+  TuplePattern |
+  SimpleLiteralPattern |
   WildcardPattern |
 
   Func |
@@ -37,6 +39,7 @@ export type Declaration = {
 export type Expression = (
   FuncApplication |
   Match |
+  Name |
   Literal
 );
 
@@ -44,35 +47,53 @@ export type FuncApplication = {
   type: 'function-application';
   func: Expression;
   arg: Expression;
-}
+};
 
 export type Match = {
   type: 'match';
   principal: Expression;
   clauses: MatchClause[];
-}
+};
 
 export type MatchClause = {
   type: 'match-clause';
   pattern: Pattern;
   body: Expression;
-}
+};
 
-export type Pattern = ValuePattern | WildcardPattern;
+export type Pattern = (
+  NamePattern |
+  TuplePattern |
+  SimpleLiteralPattern |
+  WildcardPattern
+);
 
-export type ValuePattern = {
-  type: 'value-pattern';
-  value: Literal;
-}
+export type NamePattern = {
+  type: 'name-pattern';
+  name: Name;
+};
+
+export type TuplePattern = {
+  type: 'tuple-pattern';
+  members: Pattern[];
+};
+
+export type SimpleLiteralPattern = {
+  type: 'simple-literal-pattern';
+  value: SimpleLiteral;
+};
 
 export type WildcardPattern = {
   type: 'wildcard-pattern';
-}
+};
 
 export type Literal = (
   Func |
   Tuple |
-  Name |
+  SimpleLiteral
+);
+
+export type SimpleLiteral = (
   Atom |
   Bool |
   Numeral |

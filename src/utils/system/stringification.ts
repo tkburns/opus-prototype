@@ -92,11 +92,16 @@ export const flattenIndentation = (s: string): string => {
 
 /* code template processor */
 
-export const code = (literals: TemplateStringsArray, ...interpolations: (string | string[])[]): string => {
-  const processed = processTemplate(literals, interpolations, (pre, interp, post) => {
-    const interpLines = Array.isArray(interp)
-      ? interp.flatMap(chunk => chunk.split('\n'))
-      : interp.split('\n');
+type Stringable = string | number | boolean;
+type CodeInterpolation = Stringable | Stringable[];
+
+export const code = (literals: TemplateStringsArray, ...interpolations: CodeInterpolation[]): string => {
+  const normalizedInterpolations = interpolations
+    .map(interp => Array.isArray(interp) ? interp : [interp])
+    .map(interp => interp.map(segment => segment.toString()));
+
+  const processed = processTemplate(literals, normalizedInterpolations, (pre, interp, post) => {
+    const interpLines = interp.flatMap(chunk => chunk.split('\n'));
 
     const preLines = pre.split('\n');
 

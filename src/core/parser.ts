@@ -50,7 +50,7 @@ const expression: ExtendedRDParser<AST.Expression, [number?]> = lrec((handle, ct
   return precedented(handle, ctx, precedence, [
     [match],
     [funcApplication],
-    [parenthesizedExpression, literal]
+    [parenthesizedExpression, literal, name]
   ]);
 });
 const parenthesizedExpression: RDParser<AST.Expression> = cached((handle, ctx) => {
@@ -120,13 +120,47 @@ const matchClause: RDParser<AST.MatchClause> = (handle, ctx) => {
   };
 };
 
-const pattern: RDParser<AST.Pattern> = (handle, ctx) =>
-  choice(handle, ctx, [wildcardPattern, valuePattern]);
+const pattern: RDParser<AST.Pattern> = (handle, ctx) => {
+  return choice(handle, ctx, [
+    wildcardPattern,
+    simpleLiteralPattern,
+    namePattern,
+    tuplePattern
+  ]);
+};
 
-const valuePattern: RDParser<AST.ValuePattern> = (handle, ctx) => {
-  const value = literal(handle, ctx);
+const namePattern: RDParser<AST.NamePattern> = (handle, ctx) => {
+  const nm = name(handle, ctx);
   return {
-    type: 'value-pattern',
+    type: 'name-pattern',
+    name: nm
+  };
+};
+
+const tuplePattern: RDParser<AST.TuplePattern> = (handle, ctx) => {
+  handle.consume('(');
+
+  const [members] = repeated(handle, ctx, () => {
+    const member = pattern(handle, ctx);
+    optional(handle, ctx, () => {
+      handle.consume(',');
+    });
+
+    return member;
+  });
+
+  handle.consume(')');
+
+  return {
+    type: 'tuple-pattern',
+    members
+  };
+};
+
+const simpleLiteralPattern: RDParser<AST.SimpleLiteralPattern> = (handle, ctx) => {
+  const value = simpleLiteral(handle, ctx);
+  return {
+    type: 'simple-literal-pattern',
     value
   };
 };
@@ -140,7 +174,12 @@ const literal: RDParser<AST.Literal> = (handle, ctx) => {
   return choice(handle, ctx, [
     func,
     tuple,
-    name,
+    simpleLiteral
+  ]);
+};
+
+const simpleLiteral: RDParser<AST.SimpleLiteral> = (handle, ctx) => {
+  return choice(handle, ctx, [
     atom,
     bool,
     number,
