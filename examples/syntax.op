@@ -62,7 +62,7 @@ numsGenerator = start => end => start match (
 
 collect = handler (
   yield v k => (v, k ());
-  final => ();
+  final _ => ();
 );
 
 nums = numsGenerator 1 3 with collect;

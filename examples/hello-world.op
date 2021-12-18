@@ -7,11 +7,11 @@
 (* ------------------- *)
 (* we can also encapsulate it in a thunk *)
 
-main = msg => (
-  !(print msg)
-);
+main = {
+  !(print "Hello World")
+};
 
-!(main "Hello World");
+!main;
 
 (* ------------------- *)
 (*
@@ -20,5 +20,5 @@ main = msg => (
   and instead write to a file
 *)
 
-!(main "Hello World") with
+!main with
   IO.file.write './hello-world.txt';
