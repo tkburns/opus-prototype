@@ -29,7 +29,8 @@ module.exports = {
   ],
   coverageDirectory: './reports/coverage',
   collectCoverageFrom: [
-    './src/**/*.{ts,js}',
+    './src/utils/**/*.{ts,js}',
+    '!./src/utils/setup-aliases.ts',
     '!**/@types/**',
     '!**/__tests__/**'
   ]
