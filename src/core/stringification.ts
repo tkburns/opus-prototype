@@ -101,6 +101,11 @@ const walkers: Walkers<AST.Node, string> = {
       node.body
     ]
   ),
+  'thunk': (node, process) => stringifyBranch(
+    process,
+    node.type,
+    [node.body]
+  ),
   'tuple': (node, process) => stringifyBranch(
     process,
     node.type,

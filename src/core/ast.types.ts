@@ -15,6 +15,7 @@ export type Node = (
   WildcardPattern |
 
   Func |
+  Thunk |
   Tuple |
 
   Name |
@@ -89,6 +90,7 @@ export type WildcardPattern = {
 
 export type Literal = (
   Func |
+  Thunk |
   Tuple |
   SimpleLiteral
 );
@@ -103,6 +105,11 @@ export type SimpleLiteral = (
 export type Func = {
   type: 'function';
   arg: Name;
+  body: Expression;
+};
+
+export type Thunk = {
+  type: 'thunk';
   body: Expression;
 };
 

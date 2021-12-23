@@ -173,6 +173,7 @@ const wildcardPattern: RDParser<AST.WildcardPattern> = (handle) => {
 const literal: RDParser<AST.Literal> = (handle, ctx) => {
   return choice(handle, ctx, [
     func,
+    thunk,
     tuple,
     simpleLiteral
   ]);
@@ -196,6 +197,17 @@ const func: RDParser<AST.Func> = cached((handle, ctx) => {
     type: 'function',
     arg,
     body: expr,
+  };
+});
+
+const thunk: RDParser<AST.Thunk> = cached((handle, ctx) => {
+  handle.consume('{');
+  const body = expression(handle, ctx);
+  handle.consume('}');
+
+  return {
+    type: 'thunk',
+    body,
   };
 });
 

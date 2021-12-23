@@ -19,6 +19,7 @@ const expression = (node: AST.Expression): string => transformByType(node, {
   'function-application': funcApplication,
   match,
   'function': func,
+  thunk,
   tuple,
   name,
   atom,
@@ -112,12 +113,18 @@ const wildcardPattern = (node: AST.WildcardPattern) =>
 
 
 const func = (node: AST.Func) => {
-  const isObject = node.body.type === 'tuple';
-  const body = isObject
-    ? `(${expression(node.body)})`
-    : expression(node.body);
+  return `(${name(node.arg)}) => ${funcBody(node.body)}`;
+};
 
-  return `(${name(node.arg)}) => ${body}`;
+const funcBody = (body: AST.Expression) => {
+  const isObject = body.type === 'tuple';
+  return isObject
+    ? `(${expression(body)})`
+    : expression(body);
+};
+
+const thunk = (node: AST.Thunk) => {
+  return `() => ${funcBody(node.body)}`;
 };
 
 const tuple = (node: AST.Tuple) => {
