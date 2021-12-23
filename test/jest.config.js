@@ -23,13 +23,29 @@ module.exports = {
     'jest-watch-typeahead/filename',
     'jest-watch-typeahead/testname',
   ],
+  reporters: [
+    'default',
+    [
+      'jest-junit',
+      {
+        outputDirectory: './reports/tests',
+        outputName: 'junit.xml',
+        ancestorSeparator: ' › ',
+        addFileAttribute: true,
+        suiteNameTemplate: '{title}',
+        classNameTemplate: '{classname}:',
+        titleTemplate: '{title}',
+      },
+    ],
+  ],
   coverageReporters: [
     'text',
-    'html'
+    'json'
   ],
   coverageDirectory: './reports/coverage',
   collectCoverageFrom: [
-    './src/**/*.{ts,js}',
+    './src/utils/**/*.{ts,js}',
+    '!./src/utils/setup-aliases.ts',
     '!**/@types/**',
     '!**/__tests__/**'
   ]

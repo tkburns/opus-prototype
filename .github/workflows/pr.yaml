@@ -1,0 +1,42 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+        cache: 'npm'
+    - run: npm ci
+
+    - run: npm run lint
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+        cache: 'npm'
+    - run: npm ci
+
+    - run: npm run test:coverage
+    - uses: actions/upload-artifact@v2
+      if: always()
+      with:
+        name: test-report
+        path: reports/tests/
+    - uses: actions/upload-artifact@v2
+      if: always()
+      with:
+        name: coverage-report
+        path: reports/coverage/
