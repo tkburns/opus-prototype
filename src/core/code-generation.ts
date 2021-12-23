@@ -17,8 +17,10 @@ const declaration = (node: AST.Declaration) =>
 
 const expression = (node: AST.Expression): string => transformByType(node, {
   'function-application': funcApplication,
+  'thunk-force': thunkForce,
   match,
   'function': func,
+  thunk,
   tuple,
   name,
   atom,
@@ -28,13 +30,28 @@ const expression = (node: AST.Expression): string => transformByType(node, {
 });
 
 
+const safeFnAppTypes = [
+  'name',
+  'function-application',
+  'thunk-application',
+  'match'
+];
+
 const funcApplication = (node: AST.FuncApplication) =>{
   const fn = expression(node.func);
   const arg = expression(node.arg);
 
-  return ['name', 'function-application'].includes(node.func.type)
+  return safeFnAppTypes.includes(node.func.type)
     ? `${fn}(${arg})`
     : `(${fn})(${arg})`;
+};
+
+const thunkForce = (node: AST.ThunkForce) =>{
+  const thunk = expression(node.thunk);
+
+  return safeFnAppTypes.includes(node.thunk.type)
+    ? `${thunk}()`
+    : `(${thunk})()`;
 };
 
 
@@ -112,12 +129,18 @@ const wildcardPattern = (node: AST.WildcardPattern) =>
 
 
 const func = (node: AST.Func) => {
-  const isObject = node.body.type === 'tuple';
-  const body = isObject
-    ? `(${expression(node.body)})`
-    : expression(node.body);
+  return `(${name(node.arg)}) => ${funcBody(node.body)}`;
+};
 
-  return `(${name(node.arg)}) => ${body}`;
+const funcBody = (body: AST.Expression) => {
+  const isObject = body.type === 'tuple';
+  return isObject
+    ? `(${expression(body)})`
+    : expression(body);
+};
+
+const thunk = (node: AST.Thunk) => {
+  return `() => ${funcBody(node.body)}`;
 };
 
 const tuple = (node: AST.Tuple) => {

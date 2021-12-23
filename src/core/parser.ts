@@ -49,7 +49,7 @@ const declaration: RDParser<AST.Declaration> = cached((handle, ctx) => {
 const expression: ExtendedRDParser<AST.Expression, [number?]> = lrec((handle, ctx, precedence = 0) => {
   return precedented(handle, ctx, precedence, [
     [match],
-    [funcApplication],
+    [funcApplication, thunkForce],
     [parenthesizedExpression, literal, name]
   ]);
 });
@@ -69,6 +69,16 @@ const funcApplication: RDParser<AST.FuncApplication, PrecedenceContext> = cached
     type: 'function-application',
     func,
     arg,
+  };
+});
+
+const thunkForce: RDParser<AST.ThunkForce> = cached((handle, ctx) => {
+  handle.consume('!');
+  const thunk = expression(handle, ctx);
+
+  return {
+    type: 'thunk-force',
+    thunk,
   };
 });
 
@@ -173,6 +183,7 @@ const wildcardPattern: RDParser<AST.WildcardPattern> = (handle) => {
 const literal: RDParser<AST.Literal> = (handle, ctx) => {
   return choice(handle, ctx, [
     func,
+    thunk,
     tuple,
     simpleLiteral
   ]);
@@ -196,6 +207,17 @@ const func: RDParser<AST.Func> = cached((handle, ctx) => {
     type: 'function',
     arg,
     body: expr,
+  };
+});
+
+const thunk: RDParser<AST.Thunk> = cached((handle, ctx) => {
+  handle.consume('{');
+  const body = expression(handle, ctx);
+  handle.consume('}');
+
+  return {
+    type: 'thunk',
+    body,
   };
 });
 

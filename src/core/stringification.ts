@@ -65,6 +65,11 @@ const walkers: Walkers<AST.Node, string> = {
       node.arg
     ]
   ),
+  'thunk-force': (node, process) => stringifyBranch(
+    process,
+    node.type,
+    [node.thunk]
+  ),
   'match': (node, process) => stringifyBranch(
     process,
     node.type,
@@ -100,6 +105,11 @@ const walkers: Walkers<AST.Node, string> = {
       node.arg,
       node.body
     ]
+  ),
+  'thunk': (node, process) => stringifyBranch(
+    process,
+    node.type,
+    [node.body]
   ),
   'tuple': (node, process) => stringifyBranch(
     process,
