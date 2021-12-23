@@ -6,6 +6,7 @@ export type Node = (
   Declaration |
 
   FuncApplication |
+  ThunkForce |
 
   Match |
   MatchClause |
@@ -39,6 +40,7 @@ export type Declaration = {
 
 export type Expression = (
   FuncApplication |
+  ThunkForce |
   Match |
   Name |
   Literal
@@ -48,6 +50,11 @@ export type FuncApplication = {
   type: 'function-application';
   func: Expression;
   arg: Expression;
+};
+
+export type ThunkForce = {
+  type: 'thunk-force';
+  thunk: Expression;
 };
 
 export type Match = {

@@ -12,6 +12,7 @@ export const lexer = createLexer({
   '}': '}',
 
   '=': '=',
+  '!': '!',
 
   ',': ',',
   ';': ';',

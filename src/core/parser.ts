@@ -49,7 +49,7 @@ const declaration: RDParser<AST.Declaration> = cached((handle, ctx) => {
 const expression: ExtendedRDParser<AST.Expression, [number?]> = lrec((handle, ctx, precedence = 0) => {
   return precedented(handle, ctx, precedence, [
     [match],
-    [funcApplication],
+    [funcApplication, thunkForce],
     [parenthesizedExpression, literal, name]
   ]);
 });
@@ -69,6 +69,16 @@ const funcApplication: RDParser<AST.FuncApplication, PrecedenceContext> = cached
     type: 'function-application',
     func,
     arg,
+  };
+});
+
+const thunkForce: RDParser<AST.ThunkForce> = cached((handle, ctx) => {
+  handle.consume('!');
+  const thunk = expression(handle, ctx);
+
+  return {
+    type: 'thunk-force',
+    thunk,
   };
 });
 

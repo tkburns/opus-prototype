@@ -17,6 +17,7 @@ const declaration = (node: AST.Declaration) =>
 
 const expression = (node: AST.Expression): string => transformByType(node, {
   'function-application': funcApplication,
+  'thunk-force': thunkForce,
   match,
   'function': func,
   thunk,
@@ -29,13 +30,28 @@ const expression = (node: AST.Expression): string => transformByType(node, {
 });
 
 
+const safeFnAppTypes = [
+  'name',
+  'function-application',
+  'thunk-application',
+  'match'
+];
+
 const funcApplication = (node: AST.FuncApplication) =>{
   const fn = expression(node.func);
   const arg = expression(node.arg);
 
-  return ['name', 'function-application'].includes(node.func.type)
+  return safeFnAppTypes.includes(node.func.type)
     ? `${fn}(${arg})`
     : `(${fn})(${arg})`;
+};
+
+const thunkForce = (node: AST.ThunkForce) =>{
+  const thunk = expression(node.thunk);
+
+  return safeFnAppTypes.includes(node.thunk.type)
+    ? `${thunk}()`
+    : `(${thunk})()`;
 };
 
 
