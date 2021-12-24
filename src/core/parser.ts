@@ -1,4 +1,4 @@
-import { createRDParser, repeated, optional, choice } from '&/utils/system/parser';
+import { createRDParser, repeated, optional, choice, repeatedRequired } from '&/utils/system/parser';
 import { FilteredToken } from './lexer';
 import type * as AST from './ast.types';
 import { lrec } from '&/utils/system/parser/lrec';
@@ -47,7 +47,7 @@ const declaration: RDParser<AST.Declaration> = cached((handle, ctx) => {
 });
 
 const blockExpression: RDParser<AST.BlockExpression | AST.Expression> = cached((handle, ctx) => {
-  const [entries, error] = repeated(handle, ctx, () => {
+  const [entries] = repeatedRequired(1, handle, ctx, () => {
     const entry = choice(handle, ctx, [
       declaration,
       expression
@@ -59,10 +59,6 @@ const blockExpression: RDParser<AST.BlockExpression | AST.Expression> = cached((
 
     return entry;
   });
-
-  if (entries.length < 1) {
-    throw error;
-  }
 
   if (entries.length === 1 && entries[0].type !== 'declaration') {
     return entries[0];
@@ -128,7 +124,7 @@ const match: RDParser<AST.Match, PrecedenceContext> = (handle, ctx) => {
 const matchClauses: RDParser<AST.MatchClause[]> = (handle, ctx) => {
   handle.consume('(');
 
-  const [clauses, lastError] = repeated(handle, ctx, () => {
+  const [clauses] = repeatedRequired(1, handle, ctx, () => {
     const clause = matchClause(handle, ctx);
 
     optional(handle, ctx, () => {
@@ -137,10 +133,6 @@ const matchClauses: RDParser<AST.MatchClause[]> = (handle, ctx) => {
 
     return clause;
   });
-
-  if (clauses.length < 1) {
-    throw lastError;
-  }
 
   handle.consume(')');
 
