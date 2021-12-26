@@ -1,7 +1,7 @@
 import { collect } from '&/utils/system/collect';
 import { Input } from '&/utils/system/input';
 import { system, System } from '&/utils/system/system';
-import { codeGenerator } from './code-generation';
+import { codeGenerator } from '&/target/js';
 import { FilteredToken, lexer, Token, tokenFilter } from './lexer';
 import { parser } from './parser';
 import { injectRuntime } from './runtime';
