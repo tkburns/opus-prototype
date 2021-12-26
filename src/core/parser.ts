@@ -1,4 +1,4 @@
-import { createRDParser, repeated, optional, choice } from '&/utils/system/parser';
+import { createRDParser, repeated, optional, choice, repeatedRequired } from '&/utils/system/parser';
 import { FilteredToken } from './lexer';
 import type * as AST from './ast.types';
 import { lrec } from '&/utils/system/parser/lrec';
@@ -46,16 +46,41 @@ const declaration: RDParser<AST.Declaration> = cached((handle, ctx) => {
   };
 });
 
+const blockExpression: RDParser<AST.BlockExpression | AST.Expression> = cached((handle, ctx) => {
+  const [entries] = repeatedRequired(1, handle, ctx, () => {
+    const entry = choice(handle, ctx, [
+      declaration,
+      expression
+    ]);
+
+    optional(handle, ctx, () => {
+      handle.consume(';');
+    });
+
+    return entry;
+  });
+
+  if (entries.length === 1 && entries[0].type !== 'declaration') {
+    return entries[0];
+  }
+
+  return {
+    type: 'block-expression',
+    entries
+  };
+});
+
 const expression: ExtendedRDParser<AST.Expression, [number?]> = lrec((handle, ctx, precedence = 0) => {
   return precedented(handle, ctx, precedence, [
     [match],
     [funcApplication, thunkForce],
-    [parenthesizedExpression, literal, name]
+    [parens, literal, name]
   ]);
 });
-const parenthesizedExpression: RDParser<AST.Expression> = cached((handle, ctx) => {
+
+const parens: RDParser<AST.Expression> = cached((handle, ctx) => {
   handle.consume('(');
-  const expr = expression(handle, ctx, 0);
+  const expr = blockExpression(handle, ctx);
   handle.consume(')');
 
   return expr;
@@ -99,7 +124,7 @@ const match: RDParser<AST.Match, PrecedenceContext> = (handle, ctx) => {
 const matchClauses: RDParser<AST.MatchClause[]> = (handle, ctx) => {
   handle.consume('(');
 
-  const [clauses, lastError] = repeated(handle, ctx, () => {
+  const [clauses] = repeatedRequired(1, handle, ctx, () => {
     const clause = matchClause(handle, ctx);
 
     optional(handle, ctx, () => {
@@ -108,10 +133,6 @@ const matchClauses: RDParser<AST.MatchClause[]> = (handle, ctx) => {
 
     return clause;
   });
-
-  if (clauses.length < 1) {
-    throw lastError;
-  }
 
   handle.consume(')');
 
@@ -212,7 +233,7 @@ const func: RDParser<AST.Func> = cached((handle, ctx) => {
 
 const thunk: RDParser<AST.Thunk> = cached((handle, ctx) => {
   handle.consume('{');
-  const body = expression(handle, ctx);
+  const body = blockExpression(handle, ctx);
   handle.consume('}');
 
   return {

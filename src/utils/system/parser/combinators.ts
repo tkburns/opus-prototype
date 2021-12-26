@@ -1,3 +1,4 @@
+import { TupleOf } from '&/utils/tuple.types';
 import { RDParser } from './common.types';
 import { CompositeParseError, ParseError } from './errors';
 import { ConsumeHandle } from './handles';
@@ -57,6 +58,27 @@ export const repeated = <H extends ConsumeHandle, C, R>(handle: H, context: C, p
   }
 
   return [[], error];
+};
+
+
+type TupleOfMin<T, N extends number> =
+  N extends 0 ? T[] :
+  [...TupleOf<T, N>, ...T[]];
+
+export const repeatedRequired = <N extends number, H extends ConsumeHandle, C, R>(
+  n: N,
+  handle: H,
+  context: C,
+  parser: RDParser<H, C, R>
+): [TupleOfMin<R, N>, Error] => {
+  if (n < 1) {
+    return repeated(handle, context, parser) as [TupleOfMin<R, N>, Error];
+  }
+
+  const entry = parser(handle, context);
+  const [rest, error] = repeatedRequired(n - 1, handle, context, parser);
+
+  return [[entry, ...rest] as TupleOfMin<R, N>, error];
 };
 
 

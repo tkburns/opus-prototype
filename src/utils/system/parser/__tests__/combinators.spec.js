@@ -1,6 +1,6 @@
 import { a, b, c, d, tokenIterator } from './common';
 import { createRDParser } from '../index';
-import { attempt, choice, optional, repeated } from '../combinators';
+import { attempt, choice, optional, repeated, repeatedRequired } from '../combinators';
 import { CompositeParseError, TokenMismatch, UnexpectedEOI } from '../errors';
 
 
@@ -289,6 +289,85 @@ describe('repeated', () => {
       ]
     });
     expect(aSpy).toHaveBeenCalledWith(expect.anything(), { parent: 'start' });
+  });
+});
+
+describe('repeatedRequired', () => {
+  const saveCtx = (parser) => (handle, ctx) => {
+    return { ...parser(handle, ctx), ctx };
+  };
+
+  const start = (handle, ctx) => {
+    const aParser = ctx.save
+      ? saveCtx(a)
+      : a;
+
+    const [nodes, lastError] = repeatedRequired(2, handle, ctx, () => {
+      const node = aParser(handle, ctx);
+      handle.consume('.');
+      return node;
+    });
+
+    handle.consumeEOI();
+
+    return { type: 'start', nodes, lastError };
+  };
+
+  it('parses rules repeatedly', () => {
+    const parser = createRDParser(start);
+
+    const input1 = tokenIterator(['a', '.', 'a', '.']);
+    const result1 = parser.run(input1);
+
+    expect(result1).toEqual({
+      type: 'start',
+      nodes: [
+        { type: 'a', token: input1.tokens[0] },
+        { type: 'a', token: input1.tokens[2] },
+      ],
+      lastError: new UnexpectedEOI()
+    });
+
+    const input2 = tokenIterator(['a', '.', 'a', '.', 'a', '.', 'a', '.']);
+    const result2 = parser.run(input2);
+
+    expect(result2).toEqual({
+      type: 'start',
+      nodes: [
+        { type: 'a', token: input2.tokens[0] },
+        { type: 'a', token: input2.tokens[2] },
+        { type: 'a', token: input2.tokens[4] },
+        { type: 'a', token: input2.tokens[6] },
+      ],
+      lastError: new UnexpectedEOI()
+    });
+  });
+
+  it('throws if required number is not fulfilled', () => {
+    const parser = createRDParser(start);
+
+    const input = tokenIterator(['a', '.']);
+    expect(() => {
+      parser.run(input);
+    }).toThrow(new UnexpectedEOI());
+  });
+
+  it('passes context through', () => {
+    const ctx = { save: true, foo: 'bar' };
+
+    const parser = createRDParser(start, ctx);
+
+    const input = tokenIterator(['a', '.', 'a', '.']);
+    const result = parser.run(input);
+
+    expect(result).toEqual({
+      type: 'start',
+      nodes: [
+        { type: 'a', token: input.tokens[0], ctx },
+        { type: 'a', token: input.tokens[2], ctx },
+      ],
+      lastError: new UnexpectedEOI()
+    });
   });
 });
 

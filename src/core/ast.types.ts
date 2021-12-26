@@ -4,6 +4,7 @@ export type AST = Program;
 export type Node = (
   Program |
   Declaration |
+  BlockExpression |
 
   FuncApplication |
   ThunkForce |
@@ -38,7 +39,13 @@ export type Declaration = {
   expression: Expression;
 };
 
+export type BlockExpression = {
+  type: 'block-expression';
+  entries: (Declaration | Expression)[];
+};
+
 export type Expression = (
+  BlockExpression |
   FuncApplication |
   ThunkForce |
   Match |

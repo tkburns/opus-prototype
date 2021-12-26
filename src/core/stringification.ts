@@ -57,6 +57,11 @@ const walkers: Walkers<AST.Node, string> = {
       node.expression
     ]
   ),
+  'block-expression': (node, process) => stringifyBranch(
+    process,
+    node.type,
+    node.entries
+  ),
   'function-application': (node, process) => stringifyBranch(
     process,
     node.type,
