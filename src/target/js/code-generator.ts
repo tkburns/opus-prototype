@@ -1,7 +1,7 @@
 import type * as AST from '&/core/ast.types';
 import { Module } from '&/utils/system/system';
 import { lines, code } from '&/utils/system/stringification';
-import { transformByType } from '&/utils/system/tree-walker';
+import { transformByType } from '&/utils/nodes';
 import { last } from '&/utils/list';
 
 
