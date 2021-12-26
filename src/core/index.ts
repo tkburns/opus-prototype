@@ -5,7 +5,7 @@ import { codeGenerator } from './code-generation';
 import { FilteredToken, lexer, Token, tokenFilter } from './lexer';
 import { parser } from './parser';
 import { injectRuntime } from './runtime';
-import { astStringifier, tokenStringifier } from './stringification';
+import { astStringifier, tokenStringifier } from './stringifier';
 
 export const core = (output?: string): System<Input, string> => {
   if (output === 'all-tokens') {
