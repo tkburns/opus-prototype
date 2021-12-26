@@ -4,6 +4,9 @@ import { lines, code } from '&/utils/system/stringification';
 import { transformByType } from '&/utils/nodes';
 import { last } from '&/utils/list';
 
+import * as translator from './translator';
+import * as stringifier from './stringifier';
+
 
 const program = (node: AST.Program) => lines(
   ...node.entries
@@ -13,7 +16,7 @@ const program = (node: AST.Program) => lines(
 
 
 const declaration = (node: AST.Declaration) =>
-  `const ${name(node.name)} = ${expression(node.expression)}`;
+  `const ${generate(node.name)} = ${expression(node.expression)}`;
 
 const expression = (node: AST.Expression): string => transformByType(node, {
   'block-expression': blockExpression,
@@ -23,11 +26,11 @@ const expression = (node: AST.Expression): string => transformByType(node, {
   'function': func,
   thunk,
   tuple,
-  name,
-  atom,
-  bool,
-  number,
-  text
+  name: generate,
+  atom: generate,
+  bool: generate,
+  number: generate,
+  text: generate
 });
 
 const blockExpression = (node: AST.BlockExpression): string => {
@@ -132,7 +135,7 @@ const pattern = (node: AST.Pattern, options: MatchOptions): string => transformB
 });
 
 const namePattern = (node: AST.NamePattern, { subject }: MatchOptions) =>
-  `__opus_internals__.match.name(${subject}, ${name(node.name)})`;
+  `__opus_internals__.match.name(${subject}, ${generate(node.name)})`;
 
 const tuplePattern = (node: AST.TuplePattern, { subject }: MatchOptions) => {
   const memberMatches = node.members.map((member, index) => {
@@ -155,7 +158,7 @@ const wildcardPattern = (node: AST.WildcardPattern) =>
 
 
 const func = (node: AST.Func) => {
-  return `(${name(node.arg)}) => ${funcBody(node.body)}`;
+  return `(${generate(node.arg)}) => ${funcBody(node.body)}`;
 };
 
 const funcBody = (body: AST.Expression) => {
@@ -183,15 +186,7 @@ const tuple = (node: AST.Tuple) => {
   `;
 };
 
-const name = (node: AST.Name) => node.value;
-
-const atom = (node: AST.Atom) => `Symbol.for('${node.value}')`;
-
-const bool = (node: AST.Bool) => node.value.toString();
-
-const number = (node: AST.Numeral) => node.token.source;
-
-const text = (node: AST.Text) => `"${node.value}"`;
+const generate = (node: translator.Translatable) => stringifier.stringify(translator.translate(node));
 
 
 export const codeGenerator: Module<AST.Node, string> = {

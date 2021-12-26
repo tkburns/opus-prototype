@@ -11,7 +11,7 @@ const number = 12;
 
 const atom = Symbol.for('hello');
 
-const text = \\"hello world\\";
+const text = 'hello world';
 
 const tuple = {
   __opus_kind__: 'tuple',
@@ -38,11 +38,11 @@ pair(pair(1)(2))(pair(3)(4));
 
 const message = (name) => ((subject) => {
   if (__opus_internals__.match.simpleLiteral(subject, Symbol.for('hello'))) {
-    return \\"hello world\\";
+    return 'hello world';
   } else if (__opus_internals__.match.simpleLiteral(subject, Symbol.for('bye'))) {
-    return \\"bye everyone\\";
+    return 'bye everyone';
   } else {
-    return \\"other\\";
+    return 'other';
   }
 })(name);
 
