@@ -14,7 +14,8 @@ module.exports = {
   testEnvironment: 'node',
   moduleNameMapper: {
     '^&/(.*)$': '<rootDir>/src/$1',
-    '^&test/(.*)$': '<rootDir>/test/$1'
+    '^&test/(.*)$': '<rootDir>/test/$1',
+    '^&&/(.*)$': '<rootDir>/$1',
   },
   setupFilesAfterEnv: [
     'jest-extended'
