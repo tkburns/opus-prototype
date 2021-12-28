@@ -23,7 +23,7 @@ const expression = (node: AST.Expression): string => transformByType(node, {
   'function-application': funcApplication,
   'thunk-force': thunkForce,
   match,
-  'function': func,
+  'function': generate,
   thunk,
   tuple: generate,
   name: generate,
@@ -156,10 +156,6 @@ const simpleLiteralPattern = (node: AST.SimpleLiteralPattern, { subject }: Match
 const wildcardPattern = (node: AST.WildcardPattern) =>
   'true /* wildcard */';
 
-
-const func = (node: AST.Func) => {
-  return `(${generate(node.arg)}) => ${funcBody(node.body)}`;
-};
 
 const funcBody = (body: AST.Expression) => {
   const isObject = body.type === 'tuple';

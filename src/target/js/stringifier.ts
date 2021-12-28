@@ -4,6 +4,25 @@ import * as js from './nodes';
 
 export const identifier = (node: js.Identifier): string => node.name;
 
+export const func = (node: js.Func): string => {
+  if (node.body.length === 0 && node.ret != null) {
+    const body = node.ret.type === 'object'
+      ? `(${stringify(node.ret)})`
+      : stringify(node.ret);
+
+    return code`
+      (${node.args.map(identifier).join(', ')}) => ${body}
+    `;
+  } else {
+    return code`
+      (${node.args.map(identifier).join(', ')}) => {
+        ${node.body.map(statement => `${stringify(statement)};`)}
+        ${node.ret ? `return ${stringify(node.ret)};` : '/* no return */'}
+      }
+    `;
+  }
+};
+
 /* eslint-disable indent */
 export const object = (node: js.Object): string => code`
   {
@@ -28,15 +47,11 @@ export const string = (node: js.String): string => `'${node.value}'`;
 
 
 export type Stringifyable = (
-  js.Identifier |
-  js.Object |
-  js.Symbol |
-  js.Boolean |
-  js.Number |
-  js.String
+  js.Expression
 );
 export const stringify = (node: Stringifyable): string => transformByType(node, {
   identifier,
+  func,
   object,
   symbol,
   boolean,

@@ -3,7 +3,15 @@ import { transformByType } from '&/utils/nodes';
 import * as js from './nodes';
 
 const expression = (node: AST.Expression) => {
-  if (node.type === 'name' || node.type === 'tuple' || node.type === 'atom' || node.type === 'bool' || node.type === 'number' || node.type === 'text') {
+  if (
+    node.type === 'name' ||
+    node.type === 'function' ||
+    node.type === 'tuple' ||
+    node.type === 'atom' ||
+    node.type === 'bool' ||
+    node.type === 'number' ||
+    node.type === 'text'
+  ) {
     return translate(node);
   } else {
     throw new Error(`${node.type} is not fully implemented yet`);
@@ -12,6 +20,9 @@ const expression = (node: AST.Expression) => {
 
 
 export const name = (node: AST.Name): js.Identifier => js.identifier(node.value);
+
+export const func = (node: AST.Func): js.Func =>
+  js.func([name(node.arg)], [], expression(node.body));
 
 export const tuple = (node: AST.Tuple): js.Object => {
   const memberFields = node.members.reduce((obj, member, index) => ({
@@ -34,6 +45,7 @@ export const text = (node: AST.Text): js.String => js.string(node.value);
 
 export type Translatable = (
   AST.Name |
+  AST.Func |
   AST.Tuple |
   AST.Atom |
   AST.Bool |
@@ -43,6 +55,7 @@ export type Translatable = (
 
 export const translate = (node: Translatable): js.Node => transformByType(node, {
   name,
+  function: func,
   tuple,
   atom,
   bool,

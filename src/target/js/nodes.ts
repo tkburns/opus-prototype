@@ -2,6 +2,7 @@
 
 export enum Type {
   Identifier = 'identifier',
+  Func = 'func',
   Object = 'object',
   Symbol = 'symbol',
   Boolean = 'boolean',
@@ -10,11 +11,16 @@ export enum Type {
 }
 
 export type Node = (
+  Statement
+);
+
+export type Statement = (
   Expression
 );
 
 export type Expression = (
   Identifier |
+  Func |
   Object |
   Symbol |
   Boolean |
@@ -28,6 +34,15 @@ export type Identifier = {
   name: string;
 };
 export const identifier = (name: string): Identifier => ({ type: Type.Identifier, name });
+
+export type Func = {
+  type: Type.Func;
+  args: Identifier[];
+  body: Statement[];
+  ret?: Expression;
+};
+export const func = (args: Identifier[], body: Statement[], ret?: Expression): Func =>
+  ({ type: Type.Func, args, body, ret });
 
 export type Object = {
   type: Type.Object;
