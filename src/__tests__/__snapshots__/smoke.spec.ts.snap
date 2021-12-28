@@ -1,0 +1,108 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`smoke test (snapshot) matches snapshot 1`] = `
+"
+/* runtime goes here */
+  
+
+const boolean = true;
+
+const number = 12;
+
+const atom = Symbol.for('hello');
+
+const text = \\"hello world\\";
+
+const tuple = {
+  __opus_kind__: 'tuple',
+  size: 2,
+  _0: atom,
+  _1: text
+};
+
+const pair = (a) => (b) => ({
+  __opus_kind__: 'tuple',
+  size: 2,
+  _0: a,
+  _1: b
+});
+
+pair(pair(1)(2))(pair(3)(4));
+
+((a) => (b) => ({
+  __opus_kind__: 'tuple',
+  size: 2,
+  _0: b,
+  _1: a
+}))(1)(2);
+
+const message = (name) => ((subject) => {
+  if (__opus_internals__.match.simpleLiteral(subject, Symbol.for('hello'))) {
+    return \\"hello world\\";
+  } else if (__opus_internals__.match.simpleLiteral(subject, Symbol.for('bye'))) {
+    return \\"bye everyone\\";
+  } else {
+    return \\"other\\";
+  }
+})(name);
+
+const a = Symbol.for('a');
+
+const b = Symbol.for('b');
+
+const c = Symbol.for('c');
+
+const d = Symbol.for('d');
+
+const f = (x) => x;
+
+const g = (x) => x;
+
+(x) => ((subject) => {
+  {
+    return x;
+  }
+})(x);
+
+(x) => f(x);
+
+f(g)(a);
+
+f(g(a));
+
+{
+  __opus_kind__: 'tuple',
+  size: 2,
+  _0: (x) => a,
+  _1: (y) => b
+};
+
+{
+  __opus_kind__: 'tuple',
+  size: 2,
+  _0: ((subject) => {
+    {
+      return a;
+    }
+  })(a),
+  _1: f(a)
+};
+
+((subject) => {
+  {
+    return a;
+  }
+})(f(b));
+
+(x) => ((subject) => {
+  {
+    return (y) => b;
+  }
+})(a)((z) => c)({
+  __opus_kind__: 'tuple',
+  size: 2,
+  _0: d,
+  _1: f(x)
+});
+"
+`;
