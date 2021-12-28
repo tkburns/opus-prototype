@@ -2,6 +2,7 @@
 
 export enum Type {
   Identifier = 'identifier',
+  Object = 'object',
   Symbol = 'symbol',
   Boolean = 'boolean',
   String = 'string',
@@ -9,7 +10,12 @@ export enum Type {
 }
 
 export type Node = (
+  Expression
+);
+
+export type Expression = (
   Identifier |
+  Object |
   Symbol |
   Boolean |
   String |
@@ -22,6 +28,15 @@ export type Identifier = {
   name: string;
 };
 export const identifier = (name: string): Identifier => ({ type: Type.Identifier, name });
+
+export type Object = {
+  type: Type.Object;
+  fields: {
+    [name: string]: Expression;
+  };
+};
+export const object = (fields: Object['fields']): Object =>
+  ({ type: Type.Object, fields });
 
 export type Symbol = {
   type: Type.Symbol;

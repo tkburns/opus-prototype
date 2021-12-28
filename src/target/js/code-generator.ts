@@ -25,7 +25,7 @@ const expression = (node: AST.Expression): string => transformByType(node, {
   match,
   'function': func,
   thunk,
-  tuple,
+  tuple: generate,
   name: generate,
   atom: generate,
   bool: generate,
@@ -170,20 +170,6 @@ const funcBody = (body: AST.Expression) => {
 
 const thunk = (node: AST.Thunk) => {
   return `() => ${funcBody(node.body)}`;
-};
-
-const tuple = (node: AST.Tuple) => {
-  const memberFields = node.members.map((member, index) =>
-    `_${index}: ${expression(member)}`
-  );
-
-  return code`
-    {
-      __opus_kind__: 'tuple',
-      size: ${node.members.length},
-      ${memberFields.join(',\n')}
-    }
-  `;
 };
 
 const generate = (node: translator.Translatable) => stringifier.stringify(translator.translate(node));
