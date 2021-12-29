@@ -23,6 +23,17 @@ export const func = (node: js.Func): string => {
   }
 };
 
+export const funcCall = (node: js.FuncCall): string => {
+  const callee = stringify(node.callee);
+  const args = node.args.map(stringify).join(', ');
+
+  if (node.callee.type === 'identifier' || node.callee.type === 'func-call') {
+    return `${callee}(${args})`;
+  } else {
+    return `(${callee})(${args})`;
+  }
+};
+
 /* eslint-disable indent */
 export const object = (node: js.Object): string => code`
   {
@@ -52,6 +63,7 @@ export type Stringifyable = (
 export const stringify = (node: Stringifyable): string => transformByType(node, {
   identifier,
   func,
+  'func-call': funcCall,
   object,
   symbol,
   boolean,

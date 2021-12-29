@@ -3,6 +3,7 @@
 export enum Type {
   Identifier = 'identifier',
   Func = 'func',
+  FuncCall = 'func-call',
   Object = 'object',
   Symbol = 'symbol',
   Boolean = 'boolean',
@@ -21,6 +22,7 @@ export type Statement = (
 export type Expression = (
   Identifier |
   Func |
+  FuncCall |
   Object |
   Symbol |
   Boolean |
@@ -43,6 +45,14 @@ export type Func = {
 };
 export const func = (args: Identifier[], body: Statement[], ret?: Expression): Func =>
   ({ type: Type.Func, args, body, ret });
+
+export type FuncCall = {
+  type: Type.FuncCall;
+  callee: Expression;
+  args: Expression[];
+};
+export const funcCall = (callee: Expression, args: Expression[]): FuncCall =>
+  ({ type: Type.FuncCall, callee, args });
 
 export type Object = {
   type: Type.Object;

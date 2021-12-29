@@ -20,8 +20,8 @@ const declaration = (node: AST.Declaration) =>
 
 const expression = (node: AST.Expression): string => transformByType(node, {
   'block-expression': blockExpression,
-  'function-application': funcApplication,
-  'thunk-force': thunkForce,
+  'function-application': generate,
+  'thunk-force': generate,
   match,
   'function': generate,
   thunk: generate,
@@ -56,31 +56,6 @@ const blockExpression = (node: AST.BlockExpression): string => {
       return ${ret};
     })()
   `;
-};
-
-
-const safeFnAppTypes = [
-  'name',
-  'function-application',
-  'thunk-application',
-  'match'
-];
-
-const funcApplication = (node: AST.FuncApplication) =>{
-  const fn = expression(node.func);
-  const arg = expression(node.arg);
-
-  return safeFnAppTypes.includes(node.func.type)
-    ? `${fn}(${arg})`
-    : `(${fn})(${arg})`;
-};
-
-const thunkForce = (node: AST.ThunkForce) =>{
-  const thunk = expression(node.thunk);
-
-  return safeFnAppTypes.includes(node.thunk.type)
-    ? `${thunk}()`
-    : `(${thunk})()`;
 };
 
 

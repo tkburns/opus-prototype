@@ -8,7 +8,9 @@ const expression = (node: AST.Expression) => {
   if (
     node.type === 'name' ||
     node.type === 'function' ||
+    node.type === 'function-application' ||
     node.type === 'thunk' ||
+    node.type === 'thunk-force' ||
     node.type === 'tuple' ||
     node.type === 'atom' ||
     node.type === 'bool' ||
@@ -17,7 +19,7 @@ const expression = (node: AST.Expression) => {
   ) {
     return translate(node);
   } else {
-    throw new Error(`${node.type} is not fully implemented yet`);
+    throw new Error(`${node.type} is not fully implemented yet: \n${JSON.stringify(node, null, 2)}`);
   }
 };
 
@@ -50,7 +52,7 @@ const funcBody = (node: AST.BlockExpression): [js.Expression[], js.Expression | 
 
 const blockLine = (node: AST.Declaration | AST.Expression) => {
   if (node.type === 'declaration') {
-    throw new Error(`${node.type} is not fully implemented yet`);
+    throw new Error(`${node.type} is not fully implemented yet: \n${JSON.stringify(node, null, 2)}`);
   } else {
     return expression(node);
   }
@@ -65,6 +67,13 @@ export const thunk = (node: AST.Thunk): js.Func => {
     return js.func([], [], expression(node.body));
   }
 };
+
+
+export const funcApplication = (node: AST.FuncApplication): js.FuncCall =>
+  js.funcCall(expression(node.func), [expression(node.arg)]);
+
+export const thunkForce = (node: AST.ThunkForce): js.FuncCall =>
+  js.funcCall(expression(node.thunk), []);
 
 
 export const tuple = (node: AST.Tuple): js.Object => {
@@ -89,7 +98,9 @@ export const text = (node: AST.Text): js.String => js.string(node.value);
 export type Translatable = (
   AST.Name |
   AST.Func |
+  AST.FuncApplication |
   AST.Thunk |
+  AST.ThunkForce |
   AST.Tuple |
   AST.Atom |
   AST.Bool |
@@ -99,8 +110,10 @@ export type Translatable = (
 
 export const translate = (node: Translatable): js.Node => transformByType(node, {
   name,
-  function: func,
+  'function': func,
+  'function-application': funcApplication,
   thunk,
+  'thunk-force': thunkForce,
   tuple,
   atom,
   bool,
