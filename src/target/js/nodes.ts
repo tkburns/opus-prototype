@@ -54,6 +54,10 @@ export type FuncCall = {
 export const funcCall = (callee: Expression, args: Expression[]): FuncCall =>
   ({ type: Type.FuncCall, callee, args });
 
+export type IIFE = FuncCall & { callee: Func };
+export const iife = (body: Statement[], ret?: Expression): IIFE =>
+  funcCall(func([], body, ret), []) as IIFE;
+
 export type Object = {
   type: Type.Object;
   fields: {

@@ -6,11 +6,12 @@ import * as js from './nodes';
 
 const expression = (node: AST.Expression) => {
   if (
-    node.type === 'name' ||
+    node.type === 'block-expression' ||
     node.type === 'function' ||
     node.type === 'function-application' ||
     node.type === 'thunk' ||
     node.type === 'thunk-force' ||
+    node.type === 'name' ||
     node.type === 'tuple' ||
     node.type === 'atom' ||
     node.type === 'bool' ||
@@ -24,19 +25,12 @@ const expression = (node: AST.Expression) => {
 };
 
 
-export const name = (node: AST.Name): js.Identifier => js.identifier(node.value);
-
-
-export const func = (node: AST.Func): js.Func => {
-  if (node.body.type === 'block-expression') {
-    const [body, ret] = funcBody(node.body);
-    return js.func([name(node.arg)], body, ret);
-  } else {
-    return js.func([name(node.arg)], [], expression(node.body));
-  }
+export const blockExpression = (node: AST.BlockExpression): js.IIFE => {
+  const [body, ret] = blockBody(node);
+  return js.iife(body, ret);
 };
 
-const funcBody = (node: AST.BlockExpression): [js.Expression[], js.Expression | undefined] => {
+const blockBody = (node: AST.BlockExpression): [js.Expression[], js.Expression | undefined] => {
   const lastEntry = last(node.entries);
 
   let body = node.entries;
@@ -59,9 +53,18 @@ const blockLine = (node: AST.Declaration | AST.Expression) => {
 };
 
 
+export const func = (node: AST.Func): js.Func => {
+  if (node.body.type === 'block-expression') {
+    const [body, ret] = blockBody(node.body);
+    return js.func([name(node.arg)], body, ret);
+  } else {
+    return js.func([name(node.arg)], [], expression(node.body));
+  }
+};
+
 export const thunk = (node: AST.Thunk): js.Func => {
   if (node.body.type === 'block-expression') {
-    const [body, ret] = funcBody(node.body);
+    const [body, ret] = blockBody(node.body);
     return js.func([], body, ret);
   } else {
     return js.func([], [], expression(node.body));
@@ -74,6 +77,9 @@ export const funcApplication = (node: AST.FuncApplication): js.FuncCall =>
 
 export const thunkForce = (node: AST.ThunkForce): js.FuncCall =>
   js.funcCall(expression(node.thunk), []);
+
+
+export const name = (node: AST.Name): js.Identifier => js.identifier(node.value);
 
 
 export const tuple = (node: AST.Tuple): js.Object => {
@@ -96,11 +102,12 @@ export const text = (node: AST.Text): js.String => js.string(node.value);
 
 
 export type Translatable = (
-  AST.Name |
+  AST.BlockExpression |
   AST.Func |
   AST.FuncApplication |
   AST.Thunk |
   AST.ThunkForce |
+  AST.Name |
   AST.Tuple |
   AST.Atom |
   AST.Bool |
@@ -109,11 +116,12 @@ export type Translatable = (
 );
 
 export const translate = (node: Translatable): js.Node => transformByType(node, {
-  name,
+  'block-expression': blockExpression,
   'function': func,
   'function-application': funcApplication,
   thunk,
   'thunk-force': thunkForce,
+  name,
   tuple,
   atom,
   bool,

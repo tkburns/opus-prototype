@@ -19,7 +19,7 @@ const declaration = (node: AST.Declaration) =>
   `const ${generate(node.name)} = ${expression(node.expression)}`;
 
 const expression = (node: AST.Expression): string => transformByType(node, {
-  'block-expression': blockExpression,
+  'block-expression': generate,
   'function-application': generate,
   'thunk-force': generate,
   match,
@@ -32,31 +32,6 @@ const expression = (node: AST.Expression): string => transformByType(node, {
   number: generate,
   text: generate
 });
-
-const blockExpression = (node: AST.BlockExpression): string => {
-  const lastEntry = last(node.entries);
-  const entries = node.entries.map(node =>
-    node.type === 'declaration' ? declaration(node) : expression(node)
-  );
-
-  let body;
-  let ret;
-
-  if (lastEntry && lastEntry.type !== 'declaration') {
-    body = entries.slice(0, -1).map(code => `${code};`);
-    ret = last(entries as [string, ...string[]]);
-  } else {
-    body = entries.map(code => `${code};`);
-    ret = 'undefined';
-  }
-
-  return code`
-    (() => {
-      ${body}
-      return ${ret};
-    })()
-  `;
-};
 
 
 type MatchOptions = { subject: string };
