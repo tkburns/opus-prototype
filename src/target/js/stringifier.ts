@@ -1,4 +1,4 @@
-import { transformByType } from '&/utils/nodes';
+import { mapByType } from '&/utils/nodes';
 import { code } from '&/utils/system/stringification';
 import * as js from './nodes';
 
@@ -60,15 +60,14 @@ export const number = (node: js.Number): string => node.value;
 export const string = (node: js.String): string => `'${node.value}'`;
 
 
-export type Stringifyable = js.Node;
-export const stringify = (node: Stringifyable): string => transformByType(node, {
-  declaration,
-  identifier,
-  func,
-  'func-call': funcCall,
-  object,
-  symbol,
-  boolean,
-  number,
-  string
+export const stringify = mapByType({
+  [js.Type.Declaration]: declaration,
+  [js.Type.Identifier]: identifier,
+  [js.Type.Func]: func,
+  [js.Type.FuncCall]: funcCall,
+  [js.Type.Object]: object,
+  [js.Type.Symbol]: symbol,
+  [js.Type.Boolean]: boolean,
+  [js.Type.Number]: number,
+  [js.Type.String]: string
 });

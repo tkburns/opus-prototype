@@ -1,6 +1,6 @@
 import type * as AST from '&/core/ast.types';
 import { last } from '&/utils/list';
-import { transformByType } from '&/utils/nodes';
+import { mapByType, Typed } from '&/utils/nodes';
 import * as js from './nodes';
 
 
@@ -8,28 +8,8 @@ export const declaration = (node: AST.Declaration): js.Statement =>
   js.declaration(name(node.name), expression(node.expression));
 
 
-const expression = (node: AST.Expression): js.Expression => {
-  if (
-    node.type === 'match'
-
-  ) {
-    throw new Error(`${node.type} is not fully implemented yet: \n${JSON.stringify(node, null, 2)}`);
-  } else {
-    return transformByType(node, {
-      'block-expression': blockExpression,
-      'function': func,
-      'function-application': funcApplication,
-      thunk,
-      'thunk-force': thunkForce,
-      name,
-      tuple,
-      atom,
-      bool,
-      number,
-      text
-    });
-  }
-};
+const expression = (node: AST.Expression) =>
+  translateAll(node) as js.Expression;
 
 
 export const blockExpression = (node: AST.BlockExpression): js.IIFE => {
@@ -48,15 +28,7 @@ const blockBody = (node: AST.BlockExpression): [js.Statement[], js.Expression | 
     ret = expression(lastEntry);
   }
 
-  return [body.map(blockLine), ret];
-};
-
-const blockLine = (node: AST.Declaration | AST.Expression) => {
-  if (node.type === 'match') {
-    throw new Error(`${node.type} is not fully implemented yet: \n${JSON.stringify(node, null, 2)}`);
-  } else {
-    return translate(node);
-  }
+  return [body.map(translateAll), ret];
 };
 
 
@@ -108,22 +80,17 @@ export const number = (node: AST.Numeral): js.Number => js.number(node.token.sou
 export const text = (node: AST.Text): js.String => js.string(node.value);
 
 
-export type Translatable = (
-  AST.Declaration |
-  AST.BlockExpression |
-  AST.Func |
-  AST.FuncApplication |
-  AST.Thunk |
-  AST.ThunkForce |
-  AST.Name |
-  AST.Tuple |
-  AST.Atom |
-  AST.Bool |
-  AST.Numeral |
-  AST.Text
-);
+/* using a generic here unfortunately breaks the return type inference of translate */
+const translateAll = <N extends AST.Declaration | AST.Expression>(node: N) => {
+  if (node.type === 'match') {
+    throw new Error(`${node.type} is not fully implemented yet: \n${JSON.stringify(node, null, 2)}`);
+  } else {
+    return translate(node);
+  }
+};
 
-export const translate = (node: Translatable): js.Node => transformByType(node, {
+
+const translators = {
   declaration,
   'block-expression': blockExpression,
   'function': func,
@@ -136,4 +103,8 @@ export const translate = (node: Translatable): js.Node => transformByType(node, 
   bool,
   number,
   text
-});
+};
+export type Translatable = Extract<AST.Node, Typed<keyof typeof translators>>;
+export const translate = mapByType(translators);
+
+
