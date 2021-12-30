@@ -4,23 +4,30 @@ import { transformByType } from '&/utils/nodes';
 import * as js from './nodes';
 
 
-const expression = (node: AST.Expression) => {
+export const declaration = (node: AST.Declaration): js.Statement =>
+  js.declaration(name(node.name), expression(node.expression));
+
+
+const expression = (node: AST.Expression): js.Expression => {
   if (
-    node.type === 'block-expression' ||
-    node.type === 'function' ||
-    node.type === 'function-application' ||
-    node.type === 'thunk' ||
-    node.type === 'thunk-force' ||
-    node.type === 'name' ||
-    node.type === 'tuple' ||
-    node.type === 'atom' ||
-    node.type === 'bool' ||
-    node.type === 'number' ||
-    node.type === 'text'
+    node.type === 'match'
+
   ) {
-    return translate(node);
-  } else {
     throw new Error(`${node.type} is not fully implemented yet: \n${JSON.stringify(node, null, 2)}`);
+  } else {
+    return transformByType(node, {
+      'block-expression': blockExpression,
+      'function': func,
+      'function-application': funcApplication,
+      thunk,
+      'thunk-force': thunkForce,
+      name,
+      tuple,
+      atom,
+      bool,
+      number,
+      text
+    });
   }
 };
 
@@ -30,7 +37,7 @@ export const blockExpression = (node: AST.BlockExpression): js.IIFE => {
   return js.iife(body, ret);
 };
 
-const blockBody = (node: AST.BlockExpression): [js.Expression[], js.Expression | undefined] => {
+const blockBody = (node: AST.BlockExpression): [js.Statement[], js.Expression | undefined] => {
   const lastEntry = last(node.entries);
 
   let body = node.entries;
@@ -45,10 +52,10 @@ const blockBody = (node: AST.BlockExpression): [js.Expression[], js.Expression |
 };
 
 const blockLine = (node: AST.Declaration | AST.Expression) => {
-  if (node.type === 'declaration') {
+  if (node.type === 'match') {
     throw new Error(`${node.type} is not fully implemented yet: \n${JSON.stringify(node, null, 2)}`);
   } else {
-    return expression(node);
+    return translate(node);
   }
 };
 
@@ -102,6 +109,7 @@ export const text = (node: AST.Text): js.String => js.string(node.value);
 
 
 export type Translatable = (
+  AST.Declaration |
   AST.BlockExpression |
   AST.Func |
   AST.FuncApplication |
@@ -116,6 +124,7 @@ export type Translatable = (
 );
 
 export const translate = (node: Translatable): js.Node => transformByType(node, {
+  declaration,
   'block-expression': blockExpression,
   'function': func,
   'function-application': funcApplication,

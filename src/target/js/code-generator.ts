@@ -10,13 +10,10 @@ import * as stringifier from './stringifier';
 
 const program = (node: AST.Program) => lines(
   ...node.entries
-    .map(node => node.type === 'declaration' ? declaration(node) : expression(node))
+    .map(node => node.type === 'declaration' ? generate(node) : expression(node))
     .flatMap(code => [`${code};`, '']),
 );
 
-
-const declaration = (node: AST.Declaration) =>
-  `const ${generate(node.name)} = ${expression(node.expression)}`;
 
 const expression = (node: AST.Expression): string => transformByType(node, {
   'block-expression': generate,

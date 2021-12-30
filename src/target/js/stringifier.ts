@@ -2,6 +2,9 @@ import { transformByType } from '&/utils/nodes';
 import { code } from '&/utils/system/stringification';
 import * as js from './nodes';
 
+export const declaration = (node: js.Declaration): string =>
+  `const ${stringify(node.identifier)} = ${stringify(node.body)}`;
+
 export const identifier = (node: js.Identifier): string => node.name;
 
 export const func = (node: js.Func): string => {
@@ -57,10 +60,9 @@ export const number = (node: js.Number): string => node.value;
 export const string = (node: js.String): string => `'${node.value}'`;
 
 
-export type Stringifyable = (
-  js.Expression
-);
+export type Stringifyable = js.Node;
 export const stringify = (node: Stringifyable): string => transformByType(node, {
+  declaration,
   identifier,
   func,
   'func-call': funcCall,

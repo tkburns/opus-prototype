@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-types */
 
 export enum Type {
+  Declaration = 'declaration',
   Identifier = 'identifier',
   Func = 'func',
   FuncCall = 'func-call',
@@ -16,8 +17,17 @@ export type Node = (
 );
 
 export type Statement = (
+  Declaration |
   Expression
 );
+
+export type Declaration = {
+  type: Type.Declaration;
+  identifier: Identifier;
+  body: Expression;
+};
+export const declaration = (identifier: Identifier, body: Expression): Declaration =>
+  ({ type: Type.Declaration, identifier, body });
 
 export type Expression = (
   Identifier |
