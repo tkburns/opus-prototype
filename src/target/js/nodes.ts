@@ -2,9 +2,13 @@
 
 export enum Type {
   Declaration = 'declaration',
+
   Identifier = 'identifier',
+
   Func = 'func',
+  Return = 'return',
   FuncCall = 'func-call',
+
   Object = 'object',
   Symbol = 'symbol',
   Boolean = 'boolean',
@@ -16,9 +20,14 @@ export type Node = (
   Statement
 );
 
+export type StandaloneNode = (
+  Statement
+);
+
 export type Statement = (
   Declaration |
-  Expression
+  Expression |
+  Return
 );
 
 export type Declaration = {
@@ -51,10 +60,15 @@ export type Func = {
   type: Type.Func;
   args: Identifier[];
   body: Statement[];
-  ret?: Expression;
 };
-export const func = (args: Identifier[], body: Statement[], ret?: Expression): Func =>
-  ({ type: Type.Func, args, body, ret });
+export const func = (args: Identifier[], body: Statement[]): Func =>
+  ({ type: Type.Func, args, body });
+
+export type Return = {
+  type: Type.Return;
+  value: Expression;
+};
+export const retrn = (value: Expression): Return => ({ type: Type.Return, value });
 
 export type FuncCall = {
   type: Type.FuncCall;
@@ -65,8 +79,8 @@ export const funcCall = (callee: Expression, args: Expression[]): FuncCall =>
   ({ type: Type.FuncCall, callee, args });
 
 export type IIFE = FuncCall & { callee: Func };
-export const iife = (body: Statement[], ret?: Expression): IIFE =>
-  funcCall(func([], body, ret), []) as IIFE;
+export const iife = (body: Statement[]): IIFE =>
+  funcCall(func([], body), []) as IIFE;
 
 export type Object = {
   type: Type.Object;
@@ -100,5 +114,4 @@ export type Number = {
   value: string;
 };
 export const number = (value: string): Number => ({ type: Type.Number, value });
-
 

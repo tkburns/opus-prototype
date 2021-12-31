@@ -13,40 +13,40 @@ const expression = (node: AST.Expression) =>
 
 
 export const blockExpression = (node: AST.BlockExpression): js.IIFE => {
-  const [body, ret] = blockBody(node);
-  return js.iife(body, ret);
+  const body = blockBody(node);
+  return js.iife(body);
 };
 
-const blockBody = (node: AST.BlockExpression): [js.Statement[], js.Expression | undefined] => {
+const blockBody = (node: AST.BlockExpression): js.Statement[] => {
   const lastEntry = last(node.entries);
 
-  let body = node.entries;
-  let ret = undefined;
-
   if (lastEntry && lastEntry.type !== 'declaration') {
-    body = body.slice(0, -1);
-    ret = expression(lastEntry);
+    const body = node.entries.slice(0, -1).map(translateAll);
+    const ret = js.retrn(expression(lastEntry));
+
+    return [...body, ret];
   }
 
-  return [body.map(translateAll), ret];
+  return node.entries.map(translateAll);
 };
-
 
 export const func = (node: AST.Func): js.Func => {
   if (node.body.type === 'block-expression') {
-    const [body, ret] = blockBody(node.body);
-    return js.func([name(node.arg)], body, ret);
+    const body = blockBody(node.body);
+    return js.func([name(node.arg)], body);
   } else {
-    return js.func([name(node.arg)], [], expression(node.body));
+    const ret = js.retrn(expression(node.body));
+    return js.func([name(node.arg)], [ret]);
   }
 };
 
 export const thunk = (node: AST.Thunk): js.Func => {
   if (node.body.type === 'block-expression') {
-    const [body, ret] = blockBody(node.body);
-    return js.func([], body, ret);
+    const body = blockBody(node.body);
+    return js.func([], body);
   } else {
-    return js.func([], [], expression(node.body));
+    const ret = js.retrn(expression(node.body));
+    return js.func([], [ret]);
   }
 };
 
