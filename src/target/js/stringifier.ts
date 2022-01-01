@@ -97,6 +97,21 @@ export const boolean = (node: js.Boolean): string => node.value.toString();
 export const number = (node: js.Number): string => node.value;
 export const string = (node: js.String): string => `'${node.value}'`;
 
+const stringifyInterpolation = (node: js.RawChunk) => {
+  if (typeof node === 'object' && 'type' in node) {
+    return stringifyNode(node);
+  } else {
+    return node;
+  }
+};
+export const raw = (node: js.Raw): string => {
+  const stringifiedInterpolations = node.interpolations
+    .map(interp => Array.isArray(interp) ? interp : [interp])
+    .map(interp => interp.map(stringifyInterpolation));
+
+  return code(node.literals, ...stringifiedInterpolations);
+};
+
 
 const standaloneStringifiers = {
   [js.Type.Declaration]: declaration,
@@ -110,6 +125,7 @@ const standaloneStringifiers = {
   [js.Type.Boolean]: boolean,
   [js.Type.Number]: number,
   [js.Type.String]: string,
+  [js.Type.Raw]: raw,
 };
 
 const stringifyNode = mapByType({

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-types */
 
 import { UnionToIntersection } from '&/utils/helper.types';
+import { Stringable } from '&/utils/system/stringification';
 
 export enum Type {
   Declaration = 'declaration',
@@ -17,6 +18,8 @@ export enum Type {
   Boolean = 'boolean',
   String = 'string',
   Number = 'number',
+
+  Raw = 'raw',
 }
 
 export type Node = (
@@ -58,6 +61,7 @@ export type Statement<Ctx extends StatementContext = StatementContext.None> = (
   Declaration |
   IfElse<Ctx> |
   Expression |
+  Raw |
   (Ctx extends StatementContext.Func ? Return : never)
 );
 
@@ -97,7 +101,8 @@ export type Expression = (
   Symbol |
   Boolean |
   String |
-  Number
+  Number |
+  Raw
 );
 
 
@@ -170,3 +175,12 @@ export type Number = {
 };
 export const number = (value: string): Number => ({ type: Type.Number, value });
 
+export type RawChunk = Node | Stringable;
+export type RawInterpolation = RawChunk | RawChunk[];
+export type Raw = {
+  type: Type.Raw;
+  literals: TemplateStringsArray;
+  interpolations: RawInterpolation[];
+};
+export const raw = (literals: TemplateStringsArray, ...interpolations: RawInterpolation[]): Raw =>
+  ({ type: Type.Raw, literals, interpolations });
