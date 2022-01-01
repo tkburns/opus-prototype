@@ -4,6 +4,7 @@ import { UnionToIntersection } from '&/utils/helper.types';
 
 export enum Type {
   Declaration = 'declaration',
+  IfElse = 'if-else',
 
   Identifier = 'identifier',
 
@@ -55,6 +56,7 @@ export type StatementContext = StatementContext.Any;
 
 export type Statement<Ctx extends StatementContext = StatementContext.None> = (
   Declaration |
+  IfElse<Ctx> |
   Expression |
   (Ctx extends StatementContext.Func ? Return : never)
 );
@@ -66,6 +68,26 @@ export type Declaration = {
 };
 export const declaration = (identifier: Identifier, body: Expression): Declaration =>
   ({ type: Type.Declaration, identifier, body });
+
+export type IfElse<StmtCtx extends StatementContext = StatementContext.None> = {
+  type: Type.IfElse;
+  clauses: IfClause<StmtCtx>[];
+  else?: Statement<StmtCtx>[];
+};
+export type IfClause<StmtCtx extends StatementContext = StatementContext.None> = {
+  condition: Expression;
+  body: Statement<StmtCtx>[];
+};
+export const ifElse = <StmtCtx extends StatementContext>(
+  clauses: IfClause<StmtCtx>[],
+  elseClause?: Statement<StmtCtx>[]
+): IfElse<StmtCtx> =>
+    ({ type: Type.IfElse, clauses, else: elseClause });
+ifElse.clause = <StmtCtx extends StatementContext>(
+  condition: Expression,
+  body: Statement<StmtCtx>[]
+): IfClause<StmtCtx> =>
+    ({ condition, body });
 
 export type Expression = (
   Identifier |

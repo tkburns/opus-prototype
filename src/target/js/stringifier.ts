@@ -2,8 +2,42 @@ import { mapByType } from '&/utils/nodes';
 import { code } from '&/utils/system/stringification';
 import * as js from './nodes';
 
+const statements = (nodes: js.Statement<js.StatementContext.Func>[]): string => {
+  return nodes
+    .map(statement => {
+      const stringified = stringifyNode(statement);
+      if (statement.type === js.Type.IfElse) {
+        return stringified;
+      } else {
+        return `${stringified};`;
+      }
+    })
+    .join('\n');
+};
+
 export const declaration = (node: js.Declaration): string =>
   `const ${stringifyNode(node.identifier)} = ${stringifyNode(node.body)}`;
+
+export const ifElse = (node: js.IfElse<js.StatementContext.Func>): string => {
+  const ifClauses = node.clauses.map(clause => code`
+    if (${stringify(clause.condition)}) {
+      ${statements(clause.body)}
+    }
+  `);
+
+  let clauses = ifClauses;
+  if (node.else) {
+    const elseClause = code`
+      {
+        ${statements(node.else)}
+      }
+    `;
+
+    clauses = [...ifClauses, elseClause];
+  }
+
+  return clauses.join(' else ');
+};
 
 export const identifier = (node: js.Identifier): string => node.name;
 
@@ -21,7 +55,7 @@ export const func = (node: js.Func): string => {
   } else {
     return code`
       (${node.args.map(identifier).join(', ')}) => {
-        ${node.body.map(statement => `${stringifyNode(statement)};`)}
+        ${statements(node.body)}
       }
     `;
   }
@@ -66,6 +100,7 @@ export const string = (node: js.String): string => `'${node.value}'`;
 
 const standaloneStringifiers = {
   [js.Type.Declaration]: declaration,
+  [js.Type.IfElse]: ifElse,
   [js.Type.Identifier]: identifier,
   [js.Type.Func]: func,
   [js.Type.Return]: retn,
