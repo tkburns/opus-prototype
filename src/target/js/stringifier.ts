@@ -23,6 +23,10 @@ export const ifElse = (node: js.IfElse<js.StatementContext.Func>): string => {
     }
   `);
 
+  if (ifClauses.length === 0 && node.else) {
+    return statements(node.else);
+  }
+
   let clauses = ifClauses;
   if (node.else) {
     const elseClause = code`
@@ -43,23 +47,26 @@ export const expressionStatement = (node: js.ExpressionStatement): string =>
 export const identifier = (node: js.Identifier): string => node.name;
 
 export const func = (node: js.Func): string => {
+  const args = `(${node.args.map(identifier).join(', ')})`;
+
+  let body: string;
   if (node.body.length === 1 && node.body[0].type == js.Type.Return) {
     const ret = node.body[0].value;
 
-    const body = ret.type === js.Type.Object
+    body = ret.type === js.Type.Object
       ? `(${stringifyNode(ret)})`
       : stringifyNode(ret);
-
-    return code`
-      (${node.args.map(identifier).join(', ')}) => ${body}
-    `;
   } else {
-    return code`
-      (${node.args.map(identifier).join(', ')}) => {
+    body = code`
+      {
         ${statements(node.body)}
       }
     `;
   }
+
+  return code`
+    ${args} => ${body}
+  `;
 };
 
 const retn = (node: js.Return): string =>

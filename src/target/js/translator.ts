@@ -26,42 +26,36 @@ const statement = (node: (AST.Declaration | AST.Expression)): js.Statement => {
 
 
 export const blockExpression = (node: AST.BlockExpression): js.IIFE => {
-  const body = funcBody(node);
+  const body = funcBlock(node);
   return js.iife(body);
 };
 
-const funcBody = (node: AST.BlockExpression): js.Statement<js.StatementContext.Func>[] => {
-  const lastEntry = last(node.entries);
+const funcBlock = (node: AST.Expression): js.Statement<js.StatementContext.Func>[] => {
+  if (node.type === 'block-expression') {
+    const lastEntry = last(node.entries);
 
-  if (lastEntry && lastEntry.type !== 'declaration') {
-    const body = node.entries.slice(0, -1)
-      .map(statement);
-    const ret = js.retrn(expression(lastEntry));
+    if (lastEntry && lastEntry.type !== 'declaration') {
+      const body = node.entries.slice(0, -1)
+        .map(statement);
+      const ret = js.retrn(expression(lastEntry));
 
-    return [...body, ret];
+      return [...body, ret];
+    }
+
+    return node.entries.map(statement);
+  } else {
+    return [js.retrn(expression(node))];
   }
-
-  return node.entries.map(statement);
 };
 
 export const func = (node: AST.Func): js.Func => {
-  if (node.body.type === 'block-expression') {
-    const body = funcBody(node.body);
-    return js.func([name(node.arg)], body);
-  } else {
-    const ret = js.retrn(expression(node.body));
-    return js.func([name(node.arg)], [ret]);
-  }
+  const body = funcBlock(node.body);
+  return js.func([name(node.arg)], body);
 };
 
 export const thunk = (node: AST.Thunk): js.Func => {
-  if (node.body.type === 'block-expression') {
-    const body = funcBody(node.body);
-    return js.func([], body);
-  } else {
-    const ret = js.retrn(expression(node.body));
-    return js.func([], [ret]);
-  }
+  const body = funcBlock(node.body);
+  return js.func([], body);
 };
 
 
@@ -80,7 +74,7 @@ export const match = (node: AST.Match, { subjectName = 'subject' }: Partial<Matc
   const clauses = node.clauses.map((clause) => ({
     clause,
     condition: pattern(clause.pattern, { subject }),
-    body: [js.retrn(expression(clause.body))]
+    body: funcBlock(clause.body)
   }));
 
   let body: js.Statement<js.StatementContext.Func>[];

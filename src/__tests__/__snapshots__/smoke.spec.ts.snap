@@ -75,15 +75,11 @@ const message = (name) => ((subject) => {
 
 ((subject) => {
   if (__opus_internals__.match.name(subject, true)) {
-    return (() => {
-      const ret = 'true';
-      return ret;
-    })();
+    const ret = 'true';
+    return ret;
   } else if (__opus_internals__.match.name(subject, false)) {
-    return (() => {
-      const ret = 'false';
-      return ret;
-    })();
+    const ret = 'false';
+    return ret;
   } else {
     throw new Error(\`no match for \${subject}\`);
   }
@@ -129,9 +125,7 @@ const f = (x) => x;
 const g = (x) => x;
 
 (x) => ((subject) => {
-  {
-    return x;
-  }
+  return x;
 })(x);
 
 (x) => f(x);
@@ -151,23 +145,17 @@ f(g(a));
   __opus_kind__: 'tuple',
   size: 2,
   _0: ((subject) => {
-    {
-      return a;
-    }
+    return a;
   })(a),
   _1: f(a),
 };
 
 ((subject) => {
-  {
-    return a;
-  }
+  return a;
 })(f(b));
 
 (x) => ((subject) => {
-  {
-    return (y) => b;
-  }
+  return (y) => b;
 })(a)((z) => c)({
   __opus_kind__: 'tuple',
   size: 2,
