@@ -130,8 +130,12 @@ export const funcCall = (callee: Expression, args: Expression[]): FuncCall =>
   ({ type: Type.FuncCall, callee, args });
 
 export type IIFE = FuncCall & { callee: Func };
-export const iife = (body: Statement<StatementContext.Func>[]): IIFE =>
-  funcCall(func([], body), []) as IIFE;
+type IIFEArg = { name: Identifier; value: Expression };
+export const iife = (body: Statement<StatementContext.Func>[], args: IIFEArg[] = []): IIFE => {
+  const argNames = args.map(arg => arg.name);
+  const argValues = args.map(arg => arg.value);
+  return funcCall(func(argNames, body), argValues) as IIFE;
+};
 
 export type Object = {
   type: Type.Object;
