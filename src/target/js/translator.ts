@@ -8,8 +8,8 @@ export const declaration = (node: AST.Declaration): js.Statement =>
   js.declaration(name(node.name), expression(node.expression));
 
 
-const expression = (node: AST.Expression) =>
-  translateAll(node) as js.Expression;
+const expression = (node: AST.Expression): js.Expression =>
+  translate(node);
 
 
 export const blockExpression = (node: AST.BlockExpression): js.IIFE => {
@@ -21,13 +21,13 @@ const funcBody = (node: AST.BlockExpression): js.Statement<js.StatementContext.F
   const lastEntry = last(node.entries);
 
   if (lastEntry && lastEntry.type !== 'declaration') {
-    const body = node.entries.slice(0, -1).map(translateAll);
+    const body = node.entries.slice(0, -1).map(translate);
     const ret = js.retrn(expression(lastEntry));
 
     return [...body, ret];
   }
 
-  return node.entries.map(translateAll);
+  return node.entries.map(translate);
 };
 
 export const func = (node: AST.Func): js.Func => {
@@ -58,6 +58,86 @@ export const thunkForce = (node: AST.ThunkForce): js.FuncCall =>
   js.funcCall(expression(node.thunk), []);
 
 
+type MatchOptions = { subjectName: string };
+export const match = (node: AST.Match, { subjectName = 'subject' }: Partial<MatchOptions> = {}): js.IIFE => {
+  const subject = js.identifier(subjectName);
+  const exhaustive = last(node.clauses)?.pattern.type === 'wildcard-pattern';
+
+  const clauses = node.clauses.map((clause) => ({
+    clause,
+    condition: pattern(clause.pattern, { subject }),
+    body: [js.retrn(expression(clause.body))]
+  }));
+
+  let body: js.Statement<js.StatementContext.Func>[];
+  if (exhaustive) {
+    const lastClause = last(clauses);
+    if (lastClause?.clause.pattern.type === 'wildcard-pattern') {
+      body = [js.ifElse(
+        clauses.slice(0, -1).map(clause =>
+          js.ifElse.clause<js.StatementContext.Func>(clause.condition, clause.body)
+        ),
+        lastClause.body
+      )];
+    } else {
+      body = [js.ifElse(
+        clauses.map(clause =>
+          js.ifElse.clause<js.StatementContext.Func>(clause.condition, clause.body)
+        )
+      )];
+    }
+  } else {
+    body = [js.ifElse(
+      clauses.map(clause =>
+        js.ifElse.clause<js.StatementContext.Func>(clause.condition, clause.body)
+      ),
+      [js.raw`throw new Error(\`no match for \${${subject}}\`);`]
+    )];
+  }
+
+  const arg = {
+    name: subject,
+    value: expression(node.principal)
+  };
+
+  return js.iife(body, [arg]);
+};
+
+type PatternOptions = { subject: js.Expression };
+
+const namePattern = (node: AST.NamePattern, { subject }: PatternOptions) =>
+  js.raw`__opus_internals__.match.name(${subject}, ${name(node.name)})`;
+
+const tuplePattern = (node: AST.TuplePattern, { subject }: PatternOptions): js.Raw => {
+  const memberMatches = node.members.map((member, index) => {
+    const subjectMember = js.raw`${subject}._${index}`;
+    return js.func([], [
+      js.retrn(pattern(member, { subject: subjectMember }))
+    ]);
+  });
+
+  return js.raw`
+    __opus_internals__.match.tuple(${subject}, [
+      ${memberMatches.map(mbr => js.raw`${mbr},`)}
+    ])
+  `;
+};
+
+const simpleLiteralPattern = (node: AST.SimpleLiteralPattern, { subject }: PatternOptions) =>
+  js.raw`__opus_internals__.match.simpleLiteral(${subject}, ${expression(node.value)})`;
+
+const wildcardPattern = (node: AST.WildcardPattern) =>
+  js.raw`true /* wildcard */`;
+
+export const pattern = mapByType({
+  'name-pattern': namePattern,
+  'tuple-pattern': tuplePattern,
+  'simple-literal-pattern': simpleLiteralPattern,
+  'wildcard-pattern': wildcardPattern
+});
+
+
+
 export const name = (node: AST.Name): js.Identifier => js.identifier(node.value);
 
 
@@ -80,16 +160,6 @@ export const number = (node: AST.Numeral): js.Number => js.number(node.token.sou
 export const text = (node: AST.Text): js.String => js.string(node.value);
 
 
-/* using a generic here unfortunately breaks the return type inference of translate */
-const translateAll = <N extends AST.Declaration | AST.Expression>(node: N) => {
-  if (node.type === 'match') {
-    throw new Error(`${node.type} is not fully implemented yet: \n${JSON.stringify(node, null, 2)}`);
-  } else {
-    return translate(node);
-  }
-};
-
-
 const translators = {
   declaration,
   'block-expression': blockExpression,
@@ -97,6 +167,7 @@ const translators = {
   'function-application': funcApplication,
   thunk,
   'thunk-force': thunkForce,
+  match,
   name,
   tuple,
   atom,

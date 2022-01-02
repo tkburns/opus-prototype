@@ -1,8 +1,6 @@
 import type * as AST from '&/core/ast.types';
 import { Module } from '&/utils/system/system';
-import { lines, code } from '&/utils/system/stringification';
-import { transformByType } from '&/utils/nodes';
-import { last } from '&/utils/list';
+import { lines } from '&/utils/system/stringification';
 
 import * as translator from './translator';
 import * as stringifier from './stringifier';
@@ -10,98 +8,9 @@ import * as stringifier from './stringifier';
 
 const program = (node: AST.Program) => lines(
   ...node.entries
-    .map(node => node.type === 'declaration' ? generate(node) : expression(node))
+    .map(generate)
     .flatMap(code => [`${code};`, '']),
 );
-
-
-const expression = (node: AST.Expression): string => transformByType(node, {
-  'block-expression': generate,
-  'function-application': generate,
-  'thunk-force': generate,
-  match,
-  'function': generate,
-  thunk: generate,
-  tuple: generate,
-  name: generate,
-  atom: generate,
-  bool: generate,
-  number: generate,
-  text: generate
-});
-
-
-type MatchOptions = { subject: string };
-const match = (node: AST.Match, { subject = 'subject' }: Partial<MatchOptions> = {}) => {
-  const exhaustive = last(node.clauses)?.pattern.type === 'wildcard-pattern';
-
-  const clauses = node.clauses.map((clause, num) =>
-    matchClause(clause, { subject, exhaustive, last: num === node.clauses.length - 1 })
-  );
-
-  let body;
-  if (exhaustive) {
-    body = clauses.join(' else ');
-  } else {
-    body = code`
-      ${clauses.join(' else ')} else {
-        throw new Error(\`no match for \${subject}\`);
-      }
-    `;
-  }
-
-  return code`
-    ((${subject}) => {
-      ${body}
-    })(${expression(node.principal)})
-  `;
-};
-
-type MatchClauseOptions = MatchOptions & { exhaustive: boolean; last: boolean }
-const matchClause = (node: AST.MatchClause, options: MatchClauseOptions) => {
-  if (options.exhaustive && options.last && node.pattern.type === 'wildcard-pattern') {
-    return code`
-      {
-        return ${expression(node.body)};
-      }
-    `;
-  } else {
-    return code`
-      if (${pattern(node.pattern, options)}) {
-        return ${expression(node.body)};
-      }
-    `;
-  }
-};
-
-const pattern = (node: AST.Pattern, options: MatchOptions): string => transformByType(node, [options], {
-  'name-pattern': namePattern,
-  'tuple-pattern': tuplePattern,
-  'simple-literal-pattern': simpleLiteralPattern,
-  'wildcard-pattern': wildcardPattern
-});
-
-const namePattern = (node: AST.NamePattern, { subject }: MatchOptions) =>
-  `__opus_internals__.match.name(${subject}, ${generate(node.name)})`;
-
-const tuplePattern = (node: AST.TuplePattern, { subject }: MatchOptions) => {
-  const memberMatches = node.members.map((member, index) => {
-    const subjectMember = `${subject}._${index}`;
-    return `() => ${pattern(member, { subject: subjectMember })}`;
-  });
-
-  return code`
-    __opus_internals__.match.tuple(${subject}, [
-      ${memberMatches.join(',\n')}
-    ])
-  `;
-};
-
-const simpleLiteralPattern = (node: AST.SimpleLiteralPattern, { subject }: MatchOptions) =>
-  `__opus_internals__.match.simpleLiteral(${subject}, ${expression(node.value)})`;
-
-const wildcardPattern = (node: AST.WildcardPattern) =>
-  'true /* wildcard */';
 
 
 const generate = (node: translator.Translatable) => stringifier.stringify(translator.translate(node));
