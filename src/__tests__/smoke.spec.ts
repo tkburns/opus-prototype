@@ -3,9 +3,7 @@ import { Input } from '../utils/system/input';
 import fs from 'fs';
 
 jest.mock('&/core/runtime', () => {
-  const mockRuntime = `
-/* runtime goes here */
-  `;
+  const mockRuntime = '\n/* runtime goes here */\n';
 
   return {
     __esModule: true,
@@ -27,6 +25,12 @@ text = "hello world";
 
 tuple = (atom, text);
 
+block = (
+  "ignored";
+  alsoIgnored = "foo";
+  "returned"
+);
+
 (* functions *)
 pair = a => b => (a, b);
 pair (pair 1 2) (pair 3 4);
@@ -40,6 +44,44 @@ message = name => name match (
   :bye => "bye everyone";
   _ => "other";
 );
+
+(1, 2) match (
+  (1, _) => "1";
+  (_, 2) => "2";
+);
+
+boolean match (
+  true => (
+    ret = "true";
+    ret
+  );
+  false => (
+    ret = "false";
+    ret
+  );
+);
+
+(* ------------------- *)
+(* thunks *)
+
+one = { 1 };
+
+two = { 1; 2; };
+
+oneAndTwo = {
+  id = x => x;
+  apply = f => x => f x;
+  apply id (1, 2);
+};
+
+delay = x => { x };
+
+(!(delay 1), !{ 2 });
+
+(*
+  (!(delay 1), !{ 2 }, !(delay !{ 3 }));
+*)
+
 
 (* ------------------- *)
 (* precedence *)
