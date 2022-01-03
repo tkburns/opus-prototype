@@ -184,7 +184,11 @@ const translators = {
   number,
   text
 };
-export type Translatable = Extract<AST.Node, Typed<keyof typeof translators>>;
+
+export type TranslatableTypes = keyof typeof translators;
+export const translatableTypes = Object.keys(translators) as TranslatableTypes[];
+
+export type Translatable = Extract<AST.Node, Typed<TranslatableTypes>>;
 export const translate = mapByType(translators);
 
 
