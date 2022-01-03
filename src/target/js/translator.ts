@@ -5,7 +5,7 @@ import * as js from './nodes';
 
 
 export const program = (node: AST.Program): js.Program => {
-  return js.program(node.entries.map(entry => translate(entry)));
+  return js.program(node.entries.map(statement));
 };
 
 
@@ -15,6 +15,14 @@ export const declaration = (node: AST.Declaration): js.Statement =>
 
 const expression = (node: AST.Expression): js.Expression =>
   translate(node);
+
+const statement = (node: (AST.Declaration | AST.Expression)): js.Statement => {
+  if (node.type === 'declaration') {
+    return translate(node);
+  } else {
+    return js.expressionStatement(translate(node));
+  }
+};
 
 
 export const blockExpression = (node: AST.BlockExpression): js.IIFE => {
@@ -26,13 +34,14 @@ const funcBody = (node: AST.BlockExpression): js.Statement<js.StatementContext.F
   const lastEntry = last(node.entries);
 
   if (lastEntry && lastEntry.type !== 'declaration') {
-    const body = node.entries.slice(0, -1).map(entry => translate(entry));
+    const body = node.entries.slice(0, -1)
+      .map(statement);
     const ret = js.retrn(expression(lastEntry));
 
     return [...body, ret];
   }
 
-  return node.entries.map(entry => translate(entry));
+  return node.entries.map(statement);
 };
 
 export const func = (node: AST.Func): js.Func => {

@@ -5,42 +5,42 @@ exports[`smoke test (snapshot) matches snapshot 1`] = `
 /* runtime goes here */
 
 
-const boolean = true
+const boolean = true;
 
-const number = 12
+const number = 12;
 
-const atom = Symbol.for('hello')
+const atom = Symbol.for('hello');
 
-const text = 'hello world'
+const text = 'hello world';
 
 const tuple = {
   __opus_kind__: 'tuple',
   size: 2,
   _0: atom,
   _1: text,
-}
+};
 
 const block = (() => {
   'ignored';
   const alsoIgnored = 'foo';
   return 'returned';
-})()
+})();
 
 const pair = (a) => (b) => ({
   __opus_kind__: 'tuple',
   size: 2,
   _0: a,
   _1: b,
-})
+});
 
-pair(pair(1)(2))(pair(3)(4))
+pair(pair(1)(2))(pair(3)(4));
 
 ((a) => (b) => ({
   __opus_kind__: 'tuple',
   size: 2,
   _0: b,
   _1: a,
-}))(1)(2)
+}))(1)(2);
 
 const message = (name) => ((subject) => {
   if (__opus_internals__.match.simpleLiteral(subject, Symbol.for('hello'))) {
@@ -50,7 +50,7 @@ const message = (name) => ((subject) => {
   } else {
     return 'other';
   }
-})(name)
+})(name);
 
 ((subject) => {
   if (__opus_internals__.match.tuple(subject, [
@@ -64,14 +64,14 @@ const message = (name) => ((subject) => {
   ])) {
     return '2';
   } else {
-    throw new Error(\`no match for \${subject}\`);;
+    throw new Error(\`no match for \${subject}\`);
   }
 })({
   __opus_kind__: 'tuple',
   size: 2,
   _0: 1,
   _1: 2,
-})
+});
 
 ((subject) => {
   if (__opus_internals__.match.name(subject, true)) {
@@ -85,16 +85,16 @@ const message = (name) => ((subject) => {
       return ret;
     })();
   } else {
-    throw new Error(\`no match for \${subject}\`);;
+    throw new Error(\`no match for \${subject}\`);
   }
-})(boolean)
+})(boolean);
 
-const one = () => 1
+const one = () => 1;
 
 const two = () => {
   1;
   return 2;
-}
+};
 
 const oneAndTwo = () => {
   const id = (x) => x;
@@ -105,47 +105,47 @@ const oneAndTwo = () => {
     _0: 1,
     _1: 2,
   });
-}
+};
 
-const delay = (x) => () => x
+const delay = (x) => () => x;
 
 {
   __opus_kind__: 'tuple',
   size: 2,
   _0: delay(1)(),
   _1: (() => 2)(),
-}
+};
 
-const a = Symbol.for('a')
+const a = Symbol.for('a');
 
-const b = Symbol.for('b')
+const b = Symbol.for('b');
 
-const c = Symbol.for('c')
+const c = Symbol.for('c');
 
-const d = Symbol.for('d')
+const d = Symbol.for('d');
 
-const f = (x) => x
+const f = (x) => x;
 
-const g = (x) => x
+const g = (x) => x;
 
 (x) => ((subject) => {
   {
     return x;
   }
-})(x)
+})(x);
 
-(x) => f(x)
+(x) => f(x);
 
-f(g)(a)
+f(g)(a);
 
-f(g(a))
+f(g(a));
 
 {
   __opus_kind__: 'tuple',
   size: 2,
   _0: (x) => a,
   _1: (y) => b,
-}
+};
 
 {
   __opus_kind__: 'tuple',
@@ -156,13 +156,13 @@ f(g(a))
     }
   })(a),
   _1: f(a),
-}
+};
 
 ((subject) => {
   {
     return a;
   }
-})(f(b))
+})(f(b));
 
 (x) => ((subject) => {
   {
@@ -173,6 +173,6 @@ f(g(a))
   size: 2,
   _0: d,
   _1: f(x),
-})
+});
 "
 `;

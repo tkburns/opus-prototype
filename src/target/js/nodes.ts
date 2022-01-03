@@ -8,6 +8,7 @@ export enum Type {
 
   Declaration = 'declaration',
   IfElse = 'if-else',
+  ExpressionStatement = 'expression-statement',
 
   Identifier = 'identifier',
 
@@ -26,7 +27,8 @@ export enum Type {
 
 export type Node = (
   Program |
-  Statement<StatementContext.All>
+  Statement<StatementContext.All> |
+  Expression
 );
 
 export type Program = {
@@ -35,6 +37,7 @@ export type Program = {
 };
 export const program = (body: Statement[]): Program =>
   ({ type: Type.Program, body });
+
 
 /*
   Because Statement circularly references itself (through IfElse), we
@@ -66,7 +69,7 @@ export type StatementContext = StatementContext.Any;
 export type Statement<Ctx extends StatementContext = StatementContext.None> = (
   Declaration |
   IfElse<Ctx> |
-  Expression |
+  ExpressionStatement |
   Raw |
   (Ctx extends StatementContext.Func ? Return : never)
 );
@@ -98,6 +101,14 @@ ifElse.clause = <StmtCtx extends StatementContext>(
   body: Statement<StmtCtx>[]
 ): IfClause<StmtCtx> =>
     ({ condition, body });
+
+export type ExpressionStatement = {
+  type: Type.ExpressionStatement;
+  value: Expression;
+};
+export const expressionStatement = (value: Expression): ExpressionStatement =>
+  ({ type: Type.ExpressionStatement, value });
+
 
 export type Expression = (
   Identifier |

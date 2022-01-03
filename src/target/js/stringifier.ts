@@ -9,19 +9,12 @@ export const program = (node: js.Program): string => {
 
 const statements = (nodes: js.Statement<js.StatementContext.Func>[]): string => {
   return nodes
-    .map(statement => {
-      const stringified = stringifyNode(statement);
-      if (statement.type === js.Type.IfElse) {
-        return stringified;
-      } else {
-        return `${stringified};`;
-      }
-    })
+    .map(stringifyNode)
     .join('\n');
 };
 
 export const declaration = (node: js.Declaration): string =>
-  `const ${stringifyNode(node.identifier)} = ${stringifyNode(node.body)}`;
+  `const ${stringifyNode(node.identifier)} = ${stringifyNode(node.body)};`;
 
 export const ifElse = (node: js.IfElse<js.StatementContext.Func>): string => {
   const ifClauses = node.clauses.map(clause => code`
@@ -43,6 +36,9 @@ export const ifElse = (node: js.IfElse<js.StatementContext.Func>): string => {
 
   return clauses.join(' else ');
 };
+
+export const expressionStatement = (node: js.ExpressionStatement): string =>
+  `${stringify(node.value)};`;
 
 export const identifier = (node: js.Identifier): string => node.name;
 
@@ -67,7 +63,7 @@ export const func = (node: js.Func): string => {
 };
 
 const retn = (node: js.Return): string =>
-  `return ${stringifyNode(node.value)}`;
+  `return ${stringifyNode(node.value)};`;
 
 export const funcCall = (node: js.FuncCall): string => {
   const callee = stringifyNode(node.callee);
@@ -122,6 +118,7 @@ const standaloneStringifiers = {
   [js.Type.Program]: program,
   [js.Type.Declaration]: declaration,
   [js.Type.IfElse]: ifElse,
+  [js.Type.ExpressionStatement]: expressionStatement,
   [js.Type.Identifier]: identifier,
   [js.Type.Func]: func,
   [js.Type.Return]: retn,
