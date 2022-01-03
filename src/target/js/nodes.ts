@@ -4,6 +4,8 @@ import { UnionToIntersection } from '&/utils/helper.types';
 import { Stringable } from '&/utils/system/stringification';
 
 export enum Type {
+  Program = 'program',
+
   Declaration = 'declaration',
   IfElse = 'if-else',
 
@@ -23,12 +25,16 @@ export enum Type {
 }
 
 export type Node = (
+  Program |
   Statement<StatementContext.All>
 );
 
-export type StandaloneNode = (
-  Statement
-);
+export type Program = {
+  type: Type.Program;
+  body: Statement[];
+};
+export const program = (body: Statement[]): Program =>
+  ({ type: Type.Program, body });
 
 /*
   Because Statement circularly references itself (through IfElse), we

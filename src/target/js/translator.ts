@@ -4,6 +4,11 @@ import { mapByType, Typed } from '&/utils/nodes';
 import * as js from './nodes';
 
 
+export const program = (node: AST.Program): js.Program => {
+  return js.program(node.entries.map(entry => translate(entry)));
+};
+
+
 export const declaration = (node: AST.Declaration): js.Statement =>
   js.declaration(name(node.name), expression(node.expression));
 
@@ -21,13 +26,13 @@ const funcBody = (node: AST.BlockExpression): js.Statement<js.StatementContext.F
   const lastEntry = last(node.entries);
 
   if (lastEntry && lastEntry.type !== 'declaration') {
-    const body = node.entries.slice(0, -1).map(translate);
+    const body = node.entries.slice(0, -1).map(entry => translate(entry));
     const ret = js.retrn(expression(lastEntry));
 
     return [...body, ret];
   }
 
-  return node.entries.map(translate);
+  return node.entries.map(entry => translate(entry));
 };
 
 export const func = (node: AST.Func): js.Func => {
@@ -161,6 +166,7 @@ export const text = (node: AST.Text): js.String => js.string(node.value);
 
 
 const translators = {
+  program,
   declaration,
   'block-expression': blockExpression,
   'function': func,

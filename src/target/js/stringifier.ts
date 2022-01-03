@@ -2,6 +2,11 @@ import { mapByType } from '&/utils/nodes';
 import { code } from '&/utils/system/stringification';
 import * as js from './nodes';
 
+export const program = (node: js.Program): string => {
+  const body = node.body.map(stringifyNode).join('\n\n');
+  return `${body}\n`;
+};
+
 const statements = (nodes: js.Statement<js.StatementContext.Func>[]): string => {
   return nodes
     .map(statement => {
@@ -114,6 +119,7 @@ export const raw = (node: js.Raw): string => {
 
 
 const standaloneStringifiers = {
+  [js.Type.Program]: program,
   [js.Type.Declaration]: declaration,
   [js.Type.IfElse]: ifElse,
   [js.Type.Identifier]: identifier,
