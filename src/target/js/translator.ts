@@ -13,11 +13,11 @@ const expression = (node: AST.Expression) =>
 
 
 export const blockExpression = (node: AST.BlockExpression): js.IIFE => {
-  const body = blockBody(node);
+  const body = funcBody(node);
   return js.iife(body);
 };
 
-const blockBody = (node: AST.BlockExpression): js.Statement[] => {
+const funcBody = (node: AST.BlockExpression): js.Statement<js.StatementContext.Func>[] => {
   const lastEntry = last(node.entries);
 
   if (lastEntry && lastEntry.type !== 'declaration') {
@@ -32,7 +32,7 @@ const blockBody = (node: AST.BlockExpression): js.Statement[] => {
 
 export const func = (node: AST.Func): js.Func => {
   if (node.body.type === 'block-expression') {
-    const body = blockBody(node.body);
+    const body = funcBody(node.body);
     return js.func([name(node.arg)], body);
   } else {
     const ret = js.retrn(expression(node.body));
@@ -42,7 +42,7 @@ export const func = (node: AST.Func): js.Func => {
 
 export const thunk = (node: AST.Thunk): js.Func => {
   if (node.body.type === 'block-expression') {
-    const body = blockBody(node.body);
+    const body = funcBody(node.body);
     return js.func([], body);
   } else {
     const ret = js.retrn(expression(node.body));

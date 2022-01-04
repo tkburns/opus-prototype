@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-types */
 
+import { UnionToIntersection } from '&/utils/helper.types';
+
 export enum Type {
   Declaration = 'declaration',
 
@@ -17,17 +19,44 @@ export enum Type {
 }
 
 export type Node = (
-  Statement
+  Statement<StatementContext.All>
 );
 
 export type StandaloneNode = (
   Statement
 );
 
-export type Statement = (
+/*
+  Because Statement circularly references itself (through IfElse), we
+  have to use this hack instead of just a straight enum here.
+
+  Doing it this way means the StatementContexts themselves are assignable to each other
+  corresponding to how Statements with those contexts are assignable to each other.
+
+  Eg StatementContext.None ~> StatementContext.Func, as
+  Statement<StatementContext.None> ~> Statement<StatementContext.Func>
+*/
+/* eslint-disable @typescript-eslint/no-namespace */
+export namespace StatementContext {
+  export type None = unknown;
+
+  export namespace Core {
+    export type func = { func: true };
+  }
+  export type Core = Core.func;
+
+  export type Func = None & Core.func;
+
+  export type Any = None | Core;
+  export type All = None & UnionToIntersection<Core>;
+}
+export type StatementContext = StatementContext.Any;
+/* eslint-enable @typescript-eslint/no-namespace */
+
+export type Statement<Ctx extends StatementContext = StatementContext.None> = (
   Declaration |
   Expression |
-  Return
+  (Ctx extends StatementContext.Func ? Return : never)
 );
 
 export type Declaration = {
@@ -59,9 +88,9 @@ export const identifier = (name: string): Identifier => ({ type: Type.Identifier
 export type Func = {
   type: Type.Func;
   args: Identifier[];
-  body: Statement[];
+  body: Statement<StatementContext.Func>[];
 };
-export const func = (args: Identifier[], body: Statement[]): Func =>
+export const func = (args: Identifier[], body: Statement<StatementContext.Func>[]): Func =>
   ({ type: Type.Func, args, body });
 
 export type Return = {
@@ -79,7 +108,7 @@ export const funcCall = (callee: Expression, args: Expression[]): FuncCall =>
   ({ type: Type.FuncCall, callee, args });
 
 export type IIFE = FuncCall & { callee: Func };
-export const iife = (body: Statement[]): IIFE =>
+export const iife = (body: Statement<StatementContext.Func>[]): IIFE =>
   funcCall(func([], body), []) as IIFE;
 
 export type Object = {
