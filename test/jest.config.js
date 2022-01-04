@@ -5,7 +5,7 @@ module.exports = {
   rootDir: path.resolve(__dirname, '../'),
   moduleFileExtensions: ['ts', 'js', 'json'],
   testMatch: [
-    '**/*.spec.[jt]s?(x)',
+    '<rootDir>/src/**/*.spec.[jt]s?(x)',
   ],
   transform: {
     '\\.ts$': 'ts-jest',

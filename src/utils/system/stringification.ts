@@ -92,8 +92,8 @@ export const flattenIndentation = (s: string): string => {
 
 /* code template processor */
 
-type Stringable = string | number | boolean;
-type CodeInterpolation = Stringable | Stringable[];
+export type Stringable = string | number | boolean;
+export type CodeInterpolation = Stringable | Stringable[];
 
 export const code = (literals: TemplateStringsArray, ...interpolations: CodeInterpolation[]): string => {
   const normalizedInterpolations = interpolations
