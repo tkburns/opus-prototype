@@ -10,7 +10,6 @@
     "start:pure": "node ./build/index.js",
     "start": "npm run build && npm run start:pure --",
     "start:run": "npm run and-run -- start",
-    "start:in": "cat > .tmp.op && npm run start -- .tmp.op && rm .tmp.op",
     "start:example": "run() { npm start -- ./examples/${1:-test}.op \"${@:2}\"; }; run",
     "start:run:example": "npm run and-run -- start:example",
     "and-run": "run() { npm run $1 --silent -- \"${@:2}\" | node; }; run",
