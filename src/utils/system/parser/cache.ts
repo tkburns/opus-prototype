@@ -1,5 +1,5 @@
 import { Comparison } from '&/utils/comparison';
-import type { RDParser } from './common.types';
+import type { ExtendedRDParser, RDParser } from './common.types';
 import { ParseError } from './errors';
 import { ConsumeHandle } from './handles';
 import { compareMarks, Mark } from './mark';
@@ -15,6 +15,9 @@ export interface CacheContext {
   };
 }
 
+type KeySuffix<C, As extends unknown[]> =
+  (ctx: C, ...args: As) => string | undefined;
+
 const shouldReevaluate = (context: CacheContext, mark: Mark): boolean => {
   const reevaluate = context?.cache?.reevaluate;
   if (Array.isArray(reevaluate)) {
@@ -24,12 +27,34 @@ const shouldReevaluate = (context: CacheContext, mark: Mark): boolean => {
   }
 };
 
-export const cached = <H extends ConsumeHandle, C, R>(parser: RDParser<H, C, R>): RDParser<H, C, R> => {
+type Cached = {
+  <H extends ConsumeHandle, C, R>(parser: RDParser<H, C, R>): RDParser<H, C, R>;
+  <H extends ConsumeHandle, C, As extends unknown[], R>(
+    keySuffix: KeySuffix<C, As>,
+    parser: ExtendedRDParser<H, C, As, R>
+  ): ExtendedRDParser<H, C, As, R>;
+};
+
+export const cached: Cached = <H extends ConsumeHandle, C, As extends unknown[], R>(
+  _keySuffix: KeySuffix<C, As> | ExtendedRDParser<H, C, As, R>,
+  _parser?: ExtendedRDParser<H, C, As, R>
+): ExtendedRDParser<H, C, As, R> => {
+  let keySuffix: KeySuffix<C, As>;
+  let parser: ExtendedRDParser<H, C, As, R>;
+
+  if (_parser === undefined) {
+    keySuffix = () => '';
+    parser = _keySuffix as ExtendedRDParser<H, C, As, R>;
+  } else {
+    keySuffix = _keySuffix as KeySuffix<C, As>;
+    parser = _parser;
+  }
+
   const cache = new ParseCache<R>();
 
-  return (handle, context: C & CacheContext) => {
+  return (handle, context: C & CacheContext, ...args) => {
     const start = handle.mark();
-    const cacheKey = ParseCache.key(start);
+    const cacheKey = ParseCache.key(start, keySuffix(context, ...args));
 
     if (!shouldReevaluate(context, start)) {
       const entry = cache.get(cacheKey);
@@ -44,7 +69,7 @@ export const cached = <H extends ConsumeHandle, C, R>(parser: RDParser<H, C, R>)
     }
 
     try {
-      const node = parser(handle, context);
+      const node = parser(handle, context, ...args);
       const end = handle.mark();
       cache.set(cacheKey, { node, end });
 
