@@ -1,7 +1,6 @@
 import './utils/setup-aliases';
 
 import minimist from 'minimist';
-import fs from 'fs';
 import path from 'path';
 import { core } from './core';
 import { Input } from './utils/system/input';
@@ -47,8 +46,12 @@ if (flags.help || flags._.length !== 1) {
   const [file] = flags._;
 
   try {
-    const fileStr = fs.readFileSync(path.resolve(file), 'utf-8');
-    const input = Input.fromString(path.resolve(file), fileStr);
+    let input: Input;
+    if (file === '-') {
+      input = Input.fromStdin();
+    } else {
+      input = Input.fromFile(path.resolve(file));
+    }
 
     const result = core(flags.output).run(input);
 
@@ -58,8 +61,22 @@ if (flags.help || flags._.length !== 1) {
       throw e;
     }
 
-    process.stderr.write(`compilation for '${file}' failed\n\n`);
-    process.stderr.write(`[Error] ${e.name}: ${e.message}\n`);
+    const filename = file === '-'
+      ? '[stdin]' : file;
+    process.stderr.write(`compilation for '${filename}' failed\n\n`);
+
+    type HasCode = { code: string };
+    const hasCode = (o: unknown): o is HasCode =>
+      typeof o === 'object' && (o as Partial<HasCode>)?.code != null;
+
+    if (hasCode(e) && e.code === 'EAGAIN') {
+      process.stderr.write('[Error] unable to read from stdin\n');
+      process.stderr.write('reading from stdin interactively is not currently supported;\n');
+      process.stderr.write('instead pipe input in directly, from a file, using a heredoc, etc\n');
+    } else {
+      process.stderr.write(`[Error] ${e.name}: ${e.message}\n`);
+    }
+
     process.exit(1);
   }
 }

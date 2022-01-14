@@ -83,13 +83,19 @@ start             - runs the compiler (prints generated code to stdout)
 start:pure        - runs the compiler without rebuilding
 
 start:run         - runs the compiler & immediately runs the result (via nodejs)
-start:in          - runs the compiler using stdin (not a repl - reads the entire input before running)
 start:example     - runs the compiler on one of the example files
 (NOTE - the examples may contain syntax that is not yet implemented)
 ```
 
-And here are some of the supported cli flags:
+Usage of the actual compiler:
 ```
+npm run start -- [options] [file | -]
+
+passing - instead of a file reads from the stdin with one caveat:
+the input must be piped in (eg using direct pipe, heredoc, file redirect, etc);
+running on interactive/user input is not supported and will error.
+
+Options:
 -h / --help       prints the usage information
 -v / --version    prints the version
 -o / --output t   changes what stage of the compiler is output
@@ -100,6 +106,11 @@ Example commands:
 ```sh
 # compiles "./my-file.op"
 npm run start -- ./my-file.op
+
+# compiles using a heredoc as input
+npm run start -- - <<EOI
+  (* your code here *)
+EOI
 
 # compiles & immediately runs "./my-file.op"
 npm run start:run -- ./my-file.op
