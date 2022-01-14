@@ -70,13 +70,17 @@ const blockExpression: RDParser<AST.BlockExpression | AST.Expression> = cached((
   };
 });
 
-const expression: ExtendedRDParser<AST.Expression, [number?]> = lrec((handle, ctx, precedence = 0) => {
-  return precedented(handle, ctx, precedence, [
-    [match],
-    [funcApplication, thunkForce],
-    [parens, literal, name]
-  ]);
-});
+const expression: ExtendedRDParser<AST.Expression, [number?]> = lrec(
+  (ctx, precedence = 0) => `prec=${precedence}`,
+  (handle, ctx, precedence = 0) => {
+    return precedented(handle, ctx, { precedence, rec: expression }, [
+      [match],
+      [funcApplication],
+      [thunkForce],
+      [parens, literal, name]
+    ]);
+  }
+);
 
 const parens: RDParser<AST.Expression> = cached((handle, ctx) => {
   handle.consume('(');
@@ -97,9 +101,9 @@ const funcApplication: RDParser<AST.FuncApplication, PrecedenceContext> = cached
   };
 });
 
-const thunkForce: RDParser<AST.ThunkForce> = cached((handle, ctx) => {
+const thunkForce: RDParser<AST.ThunkForce, PrecedenceContext> = cached((handle, ctx) => {
   handle.consume('!');
-  const thunk = expression(handle, ctx);
+  const thunk = expression(handle, ctx, ctx.precedence);
 
   return {
     type: 'thunk-force',
