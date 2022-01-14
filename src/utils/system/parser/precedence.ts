@@ -61,7 +61,7 @@ export const precedented = <H extends ConsumeHandle, C, R, Ps extends RDParser<H
   { precedence, rec }: PrecedentedOptions<H, C, R>,
   parserTable: Ps
 ): R => {
-  if (precedence < 0 && precedence >= parserTable.length) {
+  if (precedence < 0 || precedence >= parserTable.length) {
     throw new Error(`precedence out of bounds of parserTable (0 .. ${parserTable.length - 1})`);
   }
 
