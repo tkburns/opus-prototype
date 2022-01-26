@@ -5,11 +5,14 @@ import { lrec } from '&/utils/system/parser/lrec';
 import { ConsumeHandle } from '&/utils/system/parser/handles';
 import type * as Base from '&/utils/system/parser/common.types';
 import { cached } from '&/utils/system/parser/cache';
-import { PrecedenceContext, precedented } from '&/utils/system/parser/precedence';
+import { precedented } from '&/utils/system/parser/precedence';
 
 type RDParser<Node, C = object> = Base.RDParser<ConsumeHandle<FilteredToken>, C, Node>;
-type ExtendedRDParser<Node, As extends unknown[], C = object> =
-  Base.ExtendedRDParser<ConsumeHandle<FilteredToken>, C, As, Node>;
+
+type TopPrecedenceParser<Node, C = object> =
+  Base.ExtendedRDParser<ConsumeHandle<FilteredToken>, C, [precedence?: number], Node>;
+type PrecedenceParser<Node, C = object> =
+  Base.ExtendedRDParser<ConsumeHandle<FilteredToken>, C, [precedence: number], Node>;
 
 const program: RDParser<AST.Program> = (handle, ctx) => {
   const [entries, error] = repeated(handle, ctx, () => {
@@ -70,16 +73,25 @@ const blockExpression: RDParser<AST.BlockExpression | AST.Expression> = cached((
   };
 });
 
-const expression: ExtendedRDParser<AST.Expression, [number?]> = lrec(
-  (ctx, precedence = 0) => `prec=${precedence}`,
-  (handle, ctx, precedence = 0) => {
-    return precedented(handle, ctx, { precedence, rec: expression }, [
-      [match],
-      [funcApplication],
-      [thunkForce],
-      [parens, literal, name]
-    ]);
-  }
+const precedenceCacheKey = (ctx: object, precedence: number) => `prec=${precedence}`;
+const topPrecedenceCacheKey = (ctx: object, precedence = 0) =>
+  precedenceCacheKey(ctx, precedence);
+
+// TODO - cached is definitely necessary here... -> build it into lrec..?
+// -> can't use cached cache in lrec as is -> lrec busts cached cache
+// -> may be able to switch to a cache key & have it work?
+const expression: TopPrecedenceParser<AST.Expression> = cached(
+  topPrecedenceCacheKey,
+  lrec(
+    topPrecedenceCacheKey,
+    (handle, ctx, precedence = 0) => {
+      return precedented(handle, ctx, { precedence, rec: expression }, [
+        [match, funcApplication],
+        [thunkForce],
+        [parens, literal, name]
+      ]);
+    }
+  )
 );
 
 const parens: RDParser<AST.Expression> = cached((handle, ctx) => {
@@ -90,40 +102,49 @@ const parens: RDParser<AST.Expression> = cached((handle, ctx) => {
   return expr;
 });
 
-const funcApplication: RDParser<AST.FuncApplication, PrecedenceContext> = cached((handle, ctx) => {
-  const func = expression(handle, ctx, ctx.precedence);
-  const arg = expression(handle, ctx, ctx.precedence + 1);
+const funcApplication: PrecedenceParser<AST.FuncApplication> = cached(
+  precedenceCacheKey,
+  (handle, ctx, precedence) => {
+    const func = expression(handle, ctx, precedence);
+    const arg = expression(handle, ctx, precedence + 1);
 
-  return {
-    type: 'function-application',
-    func,
-    arg,
-  };
-});
+    return {
+      type: 'function-application',
+      func,
+      arg,
+    };
+  }
+);
 
-const thunkForce: RDParser<AST.ThunkForce, PrecedenceContext> = cached((handle, ctx) => {
-  handle.consume('!');
-  const thunk = expression(handle, ctx, ctx.precedence);
+const thunkForce: PrecedenceParser<AST.ThunkForce> = cached(
+  precedenceCacheKey,
+  (handle, ctx, precedence) => {
+    handle.consume('!');
+    const thunk = expression(handle, ctx, precedence);
 
-  return {
-    type: 'thunk-force',
-    thunk,
-  };
-});
+    return {
+      type: 'thunk-force',
+      thunk,
+    };
+  }
+);
 
 /* Match */
 
-const match: RDParser<AST.Match, PrecedenceContext> = (handle, ctx) => {
-  const principal = expression(handle, ctx, ctx.precedence);
-  handle.consume('match');
-  const clauses = matchClauses(handle, ctx);
+const match: PrecedenceParser<AST.Match> = cached(
+  precedenceCacheKey,
+  (handle, ctx, precedence) => {
+    const principal = expression(handle, ctx, precedence);
+    handle.consume('match');
+    const clauses = matchClauses(handle, ctx);
 
-  return {
-    type: 'match',
-    principal,
-    clauses
-  };
-};
+    return {
+      type: 'match',
+      principal,
+      clauses
+    };
+  }
+);
 
 const matchClauses: RDParser<AST.MatchClause[]> = (handle, ctx) => {
   handle.consume('(');

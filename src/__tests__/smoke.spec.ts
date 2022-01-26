@@ -1,6 +1,5 @@
 import { core } from '../core';
 import { Input } from '../utils/system/input';
-import fs from 'fs';
 
 jest.mock('&/core/runtime', () => {
   const mockRuntime = '\n/* runtime goes here */\n';
@@ -99,13 +98,13 @@ f (g a);
 (a match (_ => a), f a);
 
 f b match (_ => a);
+x => x match (_ => f) (b);
 
 x => a match (_ => y => b) (z => c) (d, f x);
 `);
 
 describe('smoke test (snapshot)', () => {
   it('matches snapshot', () => {
-    fs.readFileSync(require.resolve('&&/runtime/main'), 'utf-8');
     expect(core().run(source)).toMatchSnapshot();
   });
 });
