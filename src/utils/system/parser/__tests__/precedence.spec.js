@@ -38,8 +38,8 @@ const lassoc = p => [p, p+1];
 const rassoc = p => [p+1, p];
 
 const rules = {
-  binary:  (op, ps) => rec => (handle, ctx) => {
-    const [lp, rp] = ps(ctx.precedence);
+  binary:  (op, ps) => rec => (handle, ctx, precedence) => {
+    const [lp, rp] = ps(precedence);
 
     const left = rec(handle, ctx, lp);
     handle.consume(op);
@@ -48,8 +48,8 @@ const rules = {
     return { type: 'op', op, left, right };
   },
 
-  apply: (ps = lassoc) => rec => (handle, ctx) => {
-    const [lp, rp] = ps(ctx.precedence);
+  apply: (ps = lassoc) => rec => (handle, ctx, precedence) => {
+    const [lp, rp] = ps(precedence);
 
     const left = rec(handle, ctx, lp);
     const right = rec(handle, ctx, rp);
