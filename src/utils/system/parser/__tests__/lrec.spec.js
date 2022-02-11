@@ -481,7 +481,7 @@ describe('nested', () => {
       };
     };
 
-    const r1 = cached(lrec((handle, ctx) => {
+    const r1 = lrec.cached((handle, ctx) => {
       const node = choice(handle, ctx, [
         () => {
           const n = r2(handle, ctx);
@@ -499,16 +499,16 @@ describe('nested', () => {
         type: 'r1',
         node
       };
-    }));
+    });
 
-    const r2 = cached(lrec((handle, ctx) => {
+    const r2 = lrec.cached((handle, ctx) => {
       const node = choice(handle, ctx, [rb, ra, c]);
 
       return {
         type: 'r2',
         node
       };
-    }));
+    });
 
     const ra = (handle, ctx) => {
       const rec = r1(handle, ctx);

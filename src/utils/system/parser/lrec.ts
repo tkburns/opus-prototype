@@ -1,5 +1,5 @@
 import { Comparison } from '&/utils/comparison';
-import { CacheContext } from './cache';
+import { CacheContext, cached } from './cache';
 import { ExtendedRDParser, RDParser } from './common.types';
 import { UnrestrainedLeftRecursion } from './errors';
 import { ConsumeHandle } from './handles';
@@ -23,7 +23,9 @@ type LRec = {
   ): ExtendedRDParser<H, C, As, R>;
 };
 
-export const lrec: LRec = <H extends ConsumeHandle, C, As extends unknown[], R>(
+type LRecWithCached = LRec & { cached: LRec };
+
+export const lrec: LRecWithCached = <H extends ConsumeHandle, C, As extends unknown[], R>(
   _keySuffix: KeySuffix<C, As> | ExtendedRDParser<H, C, As, R>,
   _parser?: ExtendedRDParser<H, C, As, R>
 ): ExtendedRDParser<H, C, As, R> => {
@@ -98,4 +100,18 @@ export const lrec: LRec = <H extends ConsumeHandle, C, As extends unknown[], R>(
     handle.reset(prev.end);
     return prev.node;
   };
+};
+
+lrec.cached = <H extends ConsumeHandle, C, As extends unknown[], R>(
+  _keySuffix: KeySuffix<C, As> | RDParser<H, C, R>,
+  _parser?: ExtendedRDParser<H, C, As, R>
+) => {
+  if (_parser === undefined) {
+    const parser = _keySuffix as RDParser<H, C, R>;
+    return cached(lrec(parser));
+  } else {
+    const keySuffix = _keySuffix as KeySuffix<C, As>;
+    const parser = _parser;
+    return cached(keySuffix, lrec(keySuffix, parser));
+  }
 };

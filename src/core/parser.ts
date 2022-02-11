@@ -77,21 +77,15 @@ const precedenceCacheKey = (ctx: object, precedence: number) => `prec=${preceden
 const topPrecedenceCacheKey = (ctx: object, precedence = 0) =>
   precedenceCacheKey(ctx, precedence);
 
-// TODO - cached is definitely necessary here... -> build it into lrec..?
-// -> can't use cached cache in lrec as is -> lrec busts cached cache
-// -> may be able to switch to a cache key & have it work?
-const expression: TopPrecedenceParser<AST.Expression> = cached(
+const expression: TopPrecedenceParser<AST.Expression> = lrec.cached(
   topPrecedenceCacheKey,
-  lrec(
-    topPrecedenceCacheKey,
-    (handle, ctx, precedence = 0) => {
-      return precedented(handle, ctx, { precedence, rec: expression }, [
-        [match, funcApplication],
-        [thunkForce],
-        [parens, literal, name]
-      ]);
-    }
-  )
+  (handle, ctx, precedence = 0) => {
+    return precedented(handle, ctx, { precedence, rec: expression }, [
+      [match, funcApplication],
+      [thunkForce],
+      [parens, literal, name]
+    ]);
+  }
 );
 
 const parens: RDParser<AST.Expression> = cached((handle, ctx) => {
