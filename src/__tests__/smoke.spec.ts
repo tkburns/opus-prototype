@@ -75,12 +75,23 @@ oneAndTwo = {
 
 delay = x => { x };
 
-(!(delay 1), !{ 2 });
+(!(delay 1), !{ 2 }, !(delay !{ 3 }));
 
-(*
-  (!(delay 1), !{ 2 }, !(delay !{ 3 }));
-*)
+(* nested thunks *)
+tdelay = { delay };
+!tdelay 1;
+!(!tdelay 1);
 
+(* double thunk *)
+doubleDelay = x => y => { { (x, y) } };
+!!(doubleDelay 1 2);
+
+(* inline forcing as fn args *)
+pair = x => y => (x, y);
+pair !one !two;
+
+apply = f => x => f x;
+!(apply !tdelay 1);
 
 (* ------------------- *)
 (* precedence *)
