@@ -21,4 +21,4 @@ main = {
 *)
 
 !main with
-  IO.file.write './hello-world.txt';
+  IO.file.write "./hello-world.txt";

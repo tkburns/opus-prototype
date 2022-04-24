@@ -78,7 +78,7 @@ log = x => (
 log "foo";  (* uses default/builtin handler - prints to stdout *)
 
 log "foo" with
-  IO.file.write './foo.txt';
+  IO.file.write "./foo.txt";
 (* uses builtin file IO handler - prints to file *)
 
 (* can create a handler inline *)
