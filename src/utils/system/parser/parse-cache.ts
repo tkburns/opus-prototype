@@ -8,7 +8,12 @@ export type CacheEntry<R> =
 type CacheKey = string & { __brand: 'parse-cache-key' };
 
 export class ParseCache<T> extends Map<CacheKey, CacheEntry<T>> {
-  static key(mark: Mark): CacheKey {
-    return serializeMark(mark) as CacheKey;
+  static key(mark: Mark, suffix?: string): CacheKey {
+    const sMark = serializeMark(mark);
+    if (suffix != null) {
+      return `${sMark}::${suffix}` as CacheKey;
+    } else {
+      return sMark as CacheKey;
+    }
   }
 }

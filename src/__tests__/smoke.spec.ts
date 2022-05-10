@@ -1,6 +1,5 @@
 import { core } from '../core';
 import { Input } from '../utils/system/input';
-import fs from 'fs';
 
 jest.mock('&/core/runtime', () => {
   const mockRuntime = '\n/* runtime goes here */\n';
@@ -76,12 +75,23 @@ oneAndTwo = {
 
 delay = x => { x };
 
-(!(delay 1), !{ 2 });
+(!(delay 1), !{ 2 }, !(delay !{ 3 }));
 
-(*
-  (!(delay 1), !{ 2 }, !(delay !{ 3 }));
-*)
+(* nested thunks *)
+tdelay = { delay };
+!tdelay 1;
+!(!tdelay 1);
 
+(* double thunk *)
+doubleDelay = x => y => { { (x, y) } };
+!!(doubleDelay 1 2);
+
+(* inline forcing as fn args *)
+pair = x => y => (x, y);
+pair !one !two;
+
+apply = f => x => f x;
+!(apply !tdelay 1);
 
 (* ------------------- *)
 (* precedence *)
@@ -99,13 +109,13 @@ f (g a);
 (a match (_ => a), f a);
 
 f b match (_ => a);
+x => x match (_ => f) (b);
 
 x => a match (_ => y => b) (z => c) (d, f x);
 `);
 
 describe('smoke test (snapshot)', () => {
   it('matches snapshot', () => {
-    fs.readFileSync(require.resolve('&&/runtime/main'), 'utf-8');
     expect(core().run(source)).toMatchSnapshot();
   });
 });
