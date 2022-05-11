@@ -1,9 +1,9 @@
-import { TokenMap } from './lexer';
+import type { Declaration } from './program.types';
+import type { Pattern } from './pattern.types';
+import type { Name } from './base.types';
+import { TokenMap } from '../lexer';
 
-export type AST = Program;
-export type Node = (
-  Program |
-  Declaration |
+export type ExpressionNode = (
   BlockExpression |
 
   FuncApplication |
@@ -11,38 +11,9 @@ export type Node = (
 
   Match |
   MatchClause |
-  NamePattern |
-  TuplePattern |
-  SimpleLiteralPattern |
-  WildcardPattern |
 
-  Func |
-  Thunk |
-  Tuple |
-
-  Name |
-  Atom |
-  Bool |
-  Numeral |
-  Text
+  Literal
 );
-
-
-export type Program = {
-  type: 'program';
-  entries: (Declaration | Expression)[];
-};
-
-export type Declaration = {
-  type: 'declaration';
-  name: Name;
-  expression: Expression;
-};
-
-export type BlockExpression = {
-  type: 'block-expression';
-  entries: (Declaration | Expression)[];
-};
 
 export type Expression = (
   BlockExpression |
@@ -52,6 +23,11 @@ export type Expression = (
   Name |
   Literal
 );
+
+export type BlockExpression = {
+  type: 'block-expression';
+  entries: (Declaration | Expression)[];
+};
 
 export type FuncApplication = {
   type: 'function-application';
@@ -76,31 +52,7 @@ export type MatchClause = {
   body: Expression;
 };
 
-export type Pattern = (
-  NamePattern |
-  TuplePattern |
-  SimpleLiteralPattern |
-  WildcardPattern
-);
 
-export type NamePattern = {
-  type: 'name-pattern';
-  name: Name;
-};
-
-export type TuplePattern = {
-  type: 'tuple-pattern';
-  members: Pattern[];
-};
-
-export type SimpleLiteralPattern = {
-  type: 'simple-literal-pattern';
-  value: SimpleLiteral;
-};
-
-export type WildcardPattern = {
-  type: 'wildcard-pattern';
-};
 
 export type Literal = (
   Func |
@@ -132,11 +84,6 @@ export type Tuple = {
   members: Expression[];
 };
 
-export type Name = {
-  type: 'name';
-  value: string;
-  token: TokenMap['name'];
-};
 
 export type Atom = {
   type: 'atom';

@@ -1,4 +1,4 @@
-import type * as AST from '&/core/ast.types';
+import type * as AST from '&/core/ast';
 import { Module } from '&/utils/system/system';
 import { includes } from '&/utils/list';
 

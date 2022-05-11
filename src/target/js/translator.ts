@@ -1,4 +1,4 @@
-import type * as AST from '&/core/ast.types';
+import type * as AST from '&/core/ast';
 import { last } from '&/utils/list';
 import { mapByType, Typed } from '&/utils/nodes';
 import * as js from './nodes';

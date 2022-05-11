@@ -1,6 +1,6 @@
 import { createRDParser, repeated, optional, choice, repeatedRequired } from '&/utils/system/parser';
 import { FilteredToken } from './lexer';
-import type * as AST from './ast.types';
+import type * as AST from './ast';
 import { lrec } from '&/utils/system/parser/lrec';
 import { ConsumeHandle } from '&/utils/system/parser/handles';
 import type * as Base from '&/utils/system/parser/common.types';

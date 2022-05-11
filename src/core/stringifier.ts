@@ -1,7 +1,7 @@
 import { indentChild, lines, stringifyToken } from '&/utils/system/stringification';
 import { Module } from '&/utils/system/system';
 import { Walkers, createWalkerModule, Walk } from '&/utils/system/tree-walker';
-import type * as AST from './ast.types';
+import type * as AST from './ast';
 import { Token } from './lexer';
 
 /* ---------- Token ---------- */
