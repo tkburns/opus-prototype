@@ -58,10 +58,10 @@ export type Literal = (
   Func |
   Thunk |
   Tuple |
-  SimpleLiteral
+  Particle
 );
 
-export type SimpleLiteral = (
+export type Particle = (
   Atom |
   Bool |
   Numeral |

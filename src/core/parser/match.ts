@@ -3,12 +3,12 @@ import { repeated, optional, choice } from '&/utils/system/parser';
 import type * as AST from '../ast';
 
 import { name, RDParser } from './base';
-import { simpleLiteral } from './simple-literals';
+import { particle } from './particles';
 
 export const pattern: RDParser<AST.Pattern> = (handle, ctx) => {
   return choice(handle, ctx, [
     wildcardPattern,
-    simpleLiteralPattern,
+    particlePattern,
     namePattern,
     tuplePattern
   ]);
@@ -42,10 +42,10 @@ const tuplePattern: RDParser<AST.TuplePattern> = (handle, ctx) => {
   };
 };
 
-const simpleLiteralPattern: RDParser<AST.SimpleLiteralPattern> = (handle, ctx) => {
-  const value = simpleLiteral(handle, ctx);
+const particlePattern: RDParser<AST.ParticlePattern> = (handle, ctx) => {
+  const value = particle(handle, ctx);
   return {
-    type: 'simple-literal-pattern',
+    type: 'particle-pattern',
     value
   };
 };

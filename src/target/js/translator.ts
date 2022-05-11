@@ -131,8 +131,8 @@ const tuplePattern = (node: AST.TuplePattern, { subject }: PatternOptions): js.R
   `;
 };
 
-const simpleLiteralPattern = (node: AST.SimpleLiteralPattern, { subject }: PatternOptions) =>
-  js.raw`__opus_internals__.match.simpleLiteral(${subject}, ${expression(node.value)})`;
+const particlePattern = (node: AST.ParticlePattern, { subject }: PatternOptions) =>
+  js.raw`__opus_internals__.match.particle(${subject}, ${expression(node.value)})`;
 
 const wildcardPattern = (node: AST.WildcardPattern) =>
   js.raw`true /* wildcard */`;
@@ -140,7 +140,7 @@ const wildcardPattern = (node: AST.WildcardPattern) =>
 export const pattern = mapByType({
   'name-pattern': namePattern,
   'tuple-pattern': tuplePattern,
-  'simple-literal-pattern': simpleLiteralPattern,
+  'particle-pattern': particlePattern,
   'wildcard-pattern': wildcardPattern
 });
 

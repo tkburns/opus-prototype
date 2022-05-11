@@ -43,9 +43,9 @@ pair(pair(1)(2))(pair(3)(4));
 }))(1)(2);
 
 const message = (name) => ((subject) => {
-  if (__opus_internals__.match.simpleLiteral(subject, Symbol.for('hello'))) {
+  if (__opus_internals__.match.particle(subject, Symbol.for('hello'))) {
     return 'hello world';
-  } else if (__opus_internals__.match.simpleLiteral(subject, Symbol.for('bye'))) {
+  } else if (__opus_internals__.match.particle(subject, Symbol.for('bye'))) {
     return 'bye everyone';
   } else {
     return 'other';
@@ -54,13 +54,13 @@ const message = (name) => ((subject) => {
 
 ((subject) => {
   if (__opus_internals__.match.tuple(subject, [
-    () => __opus_internals__.match.simpleLiteral(subject._0, 1),
+    () => __opus_internals__.match.particle(subject._0, 1),
     () => true /* wildcard */,
   ])) {
     return '1';
   } else if (__opus_internals__.match.tuple(subject, [
     () => true /* wildcard */,
-    () => __opus_internals__.match.simpleLiteral(subject._1, 2),
+    () => __opus_internals__.match.particle(subject._1, 2),
   ])) {
     return '2';
   } else {

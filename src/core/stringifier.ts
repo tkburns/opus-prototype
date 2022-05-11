@@ -97,7 +97,7 @@ const walkers: Walkers<AST.Node, string> = {
     node.type,
     node.members
   ),
-  'simple-literal-pattern': (node, process) => stringifyBranch(
+  'particle-pattern': (node, process) => stringifyBranch(
     process,
     node.type,
     [node.value]

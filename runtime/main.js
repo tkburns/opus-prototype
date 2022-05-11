@@ -66,8 +66,8 @@ const __opus_internals__ = {
     pattern matchers
   */
   match: {
-    // don't need to use equals(); all simple literals can be compared by ===
-    simpleLiteral: (subject, target) => subject === target,
+    // don't need to use equals(); all particles can be compared by ===
+    particle: (subject, target) => subject === target,
     name: (subject, target) => __opus_internals__.equals(subject, target),
     tuple: (subject, members) => {
       if (__opus_internals__.kind(subject) !== 'tuple') {

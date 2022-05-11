@@ -10,7 +10,7 @@ import type * as AST from '../ast';
 
 import { name, RDParser } from './base';
 import { pattern } from './match';
-import { simpleLiteral } from './simple-literals';
+import { particle } from './particles';
 
 
 type TopPrecedenceParser<Node, C = object> =
@@ -160,7 +160,7 @@ export const literal: RDParser<AST.Literal> = (handle, ctx) => {
     func,
     thunk,
     tuple,
-    simpleLiteral
+    particle
   ]);
 };
 
