@@ -4,6 +4,7 @@ import { system, System } from '&/utils/system/system';
 import { codeGenerator } from '&/target/js';
 import { FilteredToken, lexer, Token, tokenFilter } from './lexer';
 import { parser } from './parser';
+import { analyze } from './analyzer';
 import { injectRuntime } from './runtime';
 import { astStringifier, tokenStringifier } from './stringifier';
 
@@ -33,6 +34,7 @@ export const core = (output?: string): System<Input, string> => {
       lexer,
       tokenFilter,
       parser,
+      analyze,
       codeGenerator,
       injectRuntime
     );
