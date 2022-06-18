@@ -29,6 +29,7 @@ export const core = (output?: string): System<Input, string> => {
       parser,
       astStringifier
     );
+  // TODO - add output mode with analyzer & include that data in output..?
   } else {
     return system(
       lexer,
