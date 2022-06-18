@@ -15,4 +15,5 @@ export type Node = (
   PatternNode |
   BaseNode
 );
+export type NodeOf<T extends Node['type']> = Extract<Node, { type: T }>;
 
