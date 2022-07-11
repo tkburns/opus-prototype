@@ -6,7 +6,7 @@ import type * as AST from '../ast';
 
 export type RDParser<Node, C = object> = Base.RDParser<ConsumeHandle<FilteredToken>, C, Node>;
 
-export const name: RDParser<AST.Name> = (handle) => {
+export const name: RDParser<AST.Get<AST.Name>> = (handle) => {
   const token = handle.consume('name');
 
   return {

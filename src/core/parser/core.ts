@@ -18,7 +18,7 @@ type TopPrecedenceParser<Node, C = object> =
 type PrecedenceParser<Node, C = object> =
   Base.ExtendedRDParser<ConsumeHandle<FilteredToken>, C, [precedence: number], Node>;
 
-export const declaration: RDParser<AST.Declaration> = cached((handle, ctx) => {
+export const declaration: RDParser<AST.Get<AST.Declaration>> = cached((handle, ctx) => {
   const vrb = name(handle, ctx);
   handle.consume('=');
   const expr = expression(handle, ctx);
@@ -34,7 +34,7 @@ const precedenceCacheKey = (ctx: object, precedence: number) => `prec=${preceden
 const topPrecedenceCacheKey = (ctx: object, precedence = 0) =>
   precedenceCacheKey(ctx, precedence);
 
-export const expression: TopPrecedenceParser<AST.Expression> = lrec.cached(
+export const expression: TopPrecedenceParser<AST.Get<AST.Expression>> = lrec.cached(
   topPrecedenceCacheKey,
   (handle, ctx, precedence = 0) => {
     return precedented(handle, ctx, { precedence, rec: expression }, [
@@ -46,7 +46,7 @@ export const expression: TopPrecedenceParser<AST.Expression> = lrec.cached(
 );
 
 
-export const blockExpression: RDParser<AST.BlockExpression | AST.Expression> = cached((handle, ctx) => {
+export const blockExpression: RDParser<AST.Get<AST.BlockExpression> | AST.Get<AST.Expression>> = cached((handle, ctx) => {
   const [entries] = repeatedRequired(1, handle, ctx, () => {
     const entry = choice(handle, ctx, [
       // need to import
@@ -72,7 +72,7 @@ export const blockExpression: RDParser<AST.BlockExpression | AST.Expression> = c
 });
 
 
-export const parens: RDParser<AST.Expression> = cached((handle, ctx) => {
+export const parens: RDParser<AST.Get<AST.Expression>> = cached((handle, ctx) => {
   handle.consume('(');
   const expr = blockExpression(handle, ctx);
   handle.consume(')');
@@ -81,7 +81,7 @@ export const parens: RDParser<AST.Expression> = cached((handle, ctx) => {
 });
 
 
-export const funcApplication: PrecedenceParser<AST.FuncApplication> = cached(
+export const funcApplication: PrecedenceParser<AST.Get<AST.FuncApplication>> = cached(
   precedenceCacheKey,
   (handle, ctx, precedence) => {
     const func = expression(handle, ctx, precedence);
@@ -95,7 +95,7 @@ export const funcApplication: PrecedenceParser<AST.FuncApplication> = cached(
   }
 );
 
-export const thunkForce: PrecedenceParser<AST.ThunkForce> = cached(
+export const thunkForce: PrecedenceParser<AST.Get<AST.ThunkForce>> = cached(
   precedenceCacheKey,
   (handle, ctx, precedence) => {
     handle.consume('!');
@@ -109,7 +109,7 @@ export const thunkForce: PrecedenceParser<AST.ThunkForce> = cached(
 );
 
 
-export const match: PrecedenceParser<AST.Match> = cached(
+export const match: PrecedenceParser<AST.Get<AST.Match>> = cached(
   precedenceCacheKey,
   (handle, ctx, precedence) => {
     const principal = expression(handle, ctx, precedence);
@@ -124,7 +124,7 @@ export const match: PrecedenceParser<AST.Match> = cached(
   }
 );
 
-const matchClauses: RDParser<AST.MatchClause[]> = (handle, ctx) => {
+const matchClauses: RDParser<AST.Get<AST.MatchClause>[]> = (handle, ctx) => {
   handle.consume('(');
 
   const [clauses] = repeatedRequired(1, handle, ctx, () => {
@@ -142,7 +142,7 @@ const matchClauses: RDParser<AST.MatchClause[]> = (handle, ctx) => {
   return clauses;
 };
 
-const matchClause: RDParser<AST.MatchClause> = (handle, ctx) => {
+const matchClause: RDParser<AST.Get<AST.MatchClause>> = (handle, ctx) => {
   const pat = pattern(handle, ctx);
   handle.consume('=>');
   const body = expression(handle, ctx);
@@ -155,7 +155,7 @@ const matchClause: RDParser<AST.MatchClause> = (handle, ctx) => {
 };
 
 
-export const literal: RDParser<AST.Literal> = (handle, ctx) => {
+export const literal: RDParser<AST.Get<AST.Literal>> = (handle, ctx) => {
   return choice(handle, ctx, [
     func,
     thunk,
@@ -165,7 +165,7 @@ export const literal: RDParser<AST.Literal> = (handle, ctx) => {
 };
 
 
-export const func: RDParser<AST.Func> = cached((handle, ctx) => {
+export const func: RDParser<AST.Get<AST.Func>> = cached((handle, ctx) => {
   const arg = name(handle, ctx);
   handle.consume('=>');
   const expr = expression(handle, ctx);
@@ -177,7 +177,7 @@ export const func: RDParser<AST.Func> = cached((handle, ctx) => {
   };
 });
 
-export const thunk: RDParser<AST.Thunk> = cached((handle, ctx) => {
+export const thunk: RDParser<AST.Get<AST.Thunk>> = cached((handle, ctx) => {
   handle.consume('{');
   const body = blockExpression(handle, ctx);
   handle.consume('}');
@@ -188,7 +188,7 @@ export const thunk: RDParser<AST.Thunk> = cached((handle, ctx) => {
   };
 });
 
-export const tuple: RDParser<AST.Tuple> = cached((handle, ctx) => {
+export const tuple: RDParser<AST.Get<AST.Tuple>> = cached((handle, ctx) => {
   handle.consume('(');
 
   const [members] = repeated(handle, ctx, () => {

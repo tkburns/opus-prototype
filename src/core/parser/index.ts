@@ -6,7 +6,7 @@ import { RDParser } from './base';
 import { declaration, expression } from './core';
 
 
-export const program: RDParser<AST.Program> = (handle, ctx) => {
+export const program: RDParser<AST.Get<AST.Program>> = (handle, ctx) => {
   const [entries, error] = repeated(handle, ctx, () => {
     const entry = choice(handle, ctx, [declaration, expression]);
 

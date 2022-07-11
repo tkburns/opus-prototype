@@ -5,7 +5,7 @@ import type * as AST from '../ast';
 import { name, RDParser } from './base';
 import { particle } from './particles';
 
-export const pattern: RDParser<AST.Pattern> = (handle, ctx) => {
+export const pattern: RDParser<AST.Get<AST.Pattern>> = (handle, ctx) => {
   return choice(handle, ctx, [
     wildcardPattern,
     particlePattern,
@@ -14,7 +14,7 @@ export const pattern: RDParser<AST.Pattern> = (handle, ctx) => {
   ]);
 };
 
-const namePattern: RDParser<AST.NamePattern> = (handle, ctx) => {
+const namePattern: RDParser<AST.Get<AST.NamePattern>> = (handle, ctx) => {
   const nm = name(handle, ctx);
   return {
     type: 'name-pattern',
@@ -22,7 +22,7 @@ const namePattern: RDParser<AST.NamePattern> = (handle, ctx) => {
   };
 };
 
-const tuplePattern: RDParser<AST.TuplePattern> = (handle, ctx) => {
+const tuplePattern: RDParser<AST.Get<AST.TuplePattern>> = (handle, ctx) => {
   handle.consume('(');
 
   const [members] = repeated(handle, ctx, () => {
@@ -42,7 +42,7 @@ const tuplePattern: RDParser<AST.TuplePattern> = (handle, ctx) => {
   };
 };
 
-const particlePattern: RDParser<AST.ParticlePattern> = (handle, ctx) => {
+const particlePattern: RDParser<AST.Get<AST.ParticlePattern>> = (handle, ctx) => {
   const value = particle(handle, ctx);
   return {
     type: 'particle-pattern',
@@ -50,7 +50,7 @@ const particlePattern: RDParser<AST.ParticlePattern> = (handle, ctx) => {
   };
 };
 
-const wildcardPattern: RDParser<AST.WildcardPattern> = (handle) => {
+const wildcardPattern: RDParser<AST.Get<AST.WildcardPattern>> = (handle) => {
   handle.consume('_');
   return { type: 'wildcard-pattern' };
 };

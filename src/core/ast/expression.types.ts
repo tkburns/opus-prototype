@@ -1,109 +1,130 @@
+import type * as RS from '&/utils/recursion-scheme';
+import { TokenMap } from '../lexer';
 import type { Declaration } from './program.types';
 import type { Pattern } from './pattern.types';
 import type { Name } from './base.types';
-import { TokenMap } from '../lexer';
 
-export type ExpressionNode = (
-  BlockExpression |
+export type ExpressionNode<RM extends RS.Map = RS.Map> = (
+  BlockExpression<RM> |
 
-  FuncApplication |
-  ThunkForce |
+  FuncApplication<RM> |
+  ThunkForce<RM> |
 
-  Match |
-  MatchClause |
+  Match<RM> |
+  MatchClause<RM> |
 
-  Literal
+  Literal<RM>
 );
 
-export type Expression = (
-  BlockExpression |
-  FuncApplication |
-  ThunkForce |
-  Match |
-  Name |
-  Literal
+export type ExpressionNodeRM<S extends RS.RecSafe<RS.Map>> = (
+  [BlockExpression, BlockExpression<RS.RecExtract<S>>] |
+
+  [FuncApplication, FuncApplication<RS.RecExtract<S>>] |
+  [ThunkForce, ThunkForce<RS.RecExtract<S>>] |
+
+  [Match, Match<RS.RecExtract<S>>] |
+  [MatchClause, MatchClause<RS.RecExtract<S>>] |
+
+  [Func, Func<RS.RecExtract<S>>] |
+  [Thunk, Thunk<RS.RecExtract<S>>] |
+  [Tuple, Tuple<RS.RecExtract<S>>] |
+  [Atom, Atom<RS.RecExtract<S>>] |
+  [Bool, Bool<RS.RecExtract<S>>] |
+  [Numeral, Numeral<RS.RecExtract<S>>] |
+  [Text, Text<RS.RecExtract<S>>]
 );
 
-export type BlockExpression = {
+
+export type Expression<RM extends RS.Map = RS.Map> = (
+  BlockExpression<RM> |
+  FuncApplication<RM> |
+  ThunkForce<RM> |
+  Match<RM> |
+  Name<RM> |
+  Literal<RM>
+);
+
+
+export type BlockExpression<RM extends RS.Map = RS.Map> = {
   type: 'block-expression';
-  entries: (Declaration | Expression)[];
+  entries: (RS.Get<Declaration, RM> | RS.Get<Expression, RM>)[];
 };
 
-export type FuncApplication = {
+export type FuncApplication<RM extends RS.Map = RS.Map> = {
   type: 'function-application';
-  func: Expression;
-  arg: Expression;
+  func: RS.Get<Expression, RM>;
+  arg: RS.Get<Expression, RM>;
 };
 
-export type ThunkForce = {
+export type ThunkForce<RM extends RS.Map = RS.Map> = {
   type: 'thunk-force';
-  thunk: Expression;
+  thunk: RS.Get<Expression, RM>;
 };
 
-export type Match = {
+export type Match<RM extends RS.Map = RS.Map> = {
   type: 'match';
-  principal: Expression;
-  clauses: MatchClause[];
+  principal: RS.Get<Expression, RM>;
+  clauses: RS.Get<MatchClause, RM>[];
 };
 
-export type MatchClause = {
+export type MatchClause<RM extends RS.Map = RS.Map> = {
   type: 'match-clause';
-  pattern: Pattern;
-  body: Expression;
+  pattern: RS.Get<Pattern, RM>;
+  body: RS.Get<Expression, RM>;
 };
 
 
 
-export type Literal = (
-  Func |
-  Thunk |
-  Tuple |
-  Particle
+export type Literal<RM extends RS.Map = RS.Map> = (
+  Func<RM> |
+  Thunk<RM> |
+  Tuple<RM> |
+  Particle<RM>
 );
 
-export type Particle = (
-  Atom |
-  Bool |
-  Numeral |
-  Text
+export type Particle<RM extends RS.Map = RS.Map> = (
+  Atom<RM> |
+  Bool<RM> |
+  Numeral<RM> |
+  Text<RM>
 );
 
-export type Func = {
+export type Func<RM extends RS.Map = RS.Map> = {
   type: 'function';
-  arg: Name;
-  body: Expression;
+  arg: RS.Get<Name, RM>;
+  body: RS.Get<Expression, RM>;
 };
 
-export type Thunk = {
+export type Thunk<RM extends RS.Map = RS.Map> = {
   type: 'thunk';
-  body: Expression;
+  body: RS.Get<Expression, RM>;
 };
 
-export type Tuple = {
+export type Tuple<RM extends RS.Map = RS.Map> = {
   type: 'tuple';
-  members: Expression[];
+  members: RS.Get<Expression, RM>[];
 };
 
 
-export type Atom = {
+export type Atom<_RM extends RS.Map = RS.Map> = {
   type: 'atom';
   value: string;
   token: TokenMap['atom'];
 };
 
-export type Bool = {
+export type Bool<_RM extends RS.Map = RS.Map> = {
   type: 'bool';
   value: boolean;
   token: TokenMap['bool'];
 };
 
-export type Numeral = {
+export type Numeral<_RM extends RS.Map = RS.Map> = {
   type: 'number';
   value: number;
   token: TokenMap['number'];
 };
 
-export type Text = {
+export type Text<_RM extends RS.Map = RS.Map> = {
   type: 'text';
   value: string;
   token: TokenMap['text'];

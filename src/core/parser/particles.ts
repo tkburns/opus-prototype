@@ -13,7 +13,7 @@ import { RDParser } from './base';
  * (fits with the codebase better than "simple literal")
  */
 
-export const particle: RDParser<AST.Particle> = (handle, ctx) => {
+export const particle: RDParser<AST.Get<AST.Particle>> = (handle, ctx) => {
   return choice(handle, ctx, [
     atom,
     bool,
@@ -22,7 +22,7 @@ export const particle: RDParser<AST.Particle> = (handle, ctx) => {
   ]);
 };
 
-export const atom: RDParser<AST.Atom> = (handle) => {
+export const atom: RDParser<AST.Get<AST.Atom>> = (handle) => {
   const token = handle.consume('atom');
 
   return {
@@ -32,7 +32,7 @@ export const atom: RDParser<AST.Atom> = (handle) => {
   };
 };
 
-export const bool: RDParser<AST.Bool> = (handle) => {
+export const bool: RDParser<AST.Get<AST.Bool>> = (handle) => {
   const token = handle.consume('bool');
 
   return {
@@ -42,7 +42,7 @@ export const bool: RDParser<AST.Bool> = (handle) => {
   };
 };
 
-export const number: RDParser<AST.Numeral> = (handle) => {
+export const number: RDParser<AST.Get<AST.Numeral>> = (handle) => {
   const token = handle.consume('number');
 
   return {
@@ -52,7 +52,7 @@ export const number: RDParser<AST.Numeral> = (handle) => {
   };
 };
 
-export const text: RDParser<AST.Text> = (handle) => {
+export const text: RDParser<AST.Get<AST.Text>> = (handle) => {
   const token = handle.consume('text');
 
   return {

@@ -1,30 +1,40 @@
+import type * as RS from '&/utils/recursion-scheme';
 import type { Name } from './base.types';
 import type { Particle } from './expression.types';
 
-export type PatternNode = Pattern;
+export type PatternNode<RM extends RS.Map = RS.Map> = Pattern<RM>;
 
-export type Pattern = (
-  NamePattern |
-  TuplePattern |
-  ParticlePattern |
-  WildcardPattern
+export type PatternNodeRM<S extends RS.RecSafe<RS.Map>> = (
+  [NamePattern, NamePattern<RS.RecExtract<S>>] |
+
+  [TuplePattern, TuplePattern<RS.RecExtract<S>>] |
+  [ParticlePattern, ParticlePattern<RS.RecExtract<S>>] |
+
+  [WildcardPattern, WildcardPattern<RS.RecExtract<S>>]
 );
 
-export type NamePattern = {
+export type Pattern<RM extends RS.Map = RS.Map> = (
+  NamePattern<RM> |
+  TuplePattern<RM> |
+  ParticlePattern<RM> |
+  WildcardPattern<RM>
+);
+
+export type NamePattern<RM extends RS.Map = RS.Map> = {
   type: 'name-pattern';
-  name: Name;
+  name: RS.Get<Name, RM>;
 };
 
-export type TuplePattern = {
+export type TuplePattern<RM extends RS.Map = RS.Map> = {
   type: 'tuple-pattern';
-  members: Pattern[];
+  members: RS.Get<Pattern, RM>[];
 };
 
-export type ParticlePattern = {
+export type ParticlePattern<RM extends RS.Map = RS.Map> = {
   type: 'particle-pattern';
-  value: Particle;
+  value: RS.Get<Particle, RM>;
 };
 
-export type WildcardPattern = {
+export type WildcardPattern<_RM extends RS.Map = RS.Map> = {
   type: 'wildcard-pattern';
 };
