@@ -1,4 +1,4 @@
-import type * as AST from '&/core/ast';
+import type * as AAST from '&/core/analyzer/aast';
 import { Module } from '&/utils/system/system';
 import { includes } from '&/utils/list';
 
@@ -7,7 +7,7 @@ import * as stringifier from './stringifier';
 
 const generate = (node: translator.Translatable) => stringifier.stringify(translator.translate(node));
 
-export const codeGenerator: Module<AST.Node, string> = {
+export const codeGenerator: Module<AAST.Node, string> = {
   run: (node) => {
     if (includes(translator.translatableTypes, node.type)) {
       return generate(node as translator.Translatable);

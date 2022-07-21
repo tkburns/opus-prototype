@@ -5,8 +5,8 @@ import util from 'util';
 export const indent = (str: string, prefix: string, indentation: string = prefix): string =>
   prefix + str.replace(/\r?\n/g, (match) => match + indentation);
 
-export const lines = (...strs: string[]): string =>
-  strs.join('\n');
+export const lines = (...strs: (string | undefined)[]): string =>
+  strs.filter(line => line != null).join('\n');
 
 
 /* tokens */

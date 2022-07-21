@@ -16,7 +16,7 @@ Options:
  --help       [-h]  prints the usage information
  --version    [-v]  prints the version
  --output t   [-o]  the output type to print
-                    possible values: tokens, all-tokens, ast, code
+                    possible values: tokens, all-tokens, ast, aast, code
                     defaults to code
 `;
 

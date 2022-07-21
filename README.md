@@ -99,7 +99,7 @@ Options:
 -h / --help       prints the usage information
 -v / --version    prints the version
 -o / --output t   changes what stage of the compiler is output
-                    [tokens, ast, code, ...]
+                    [tokens, ast, aast, code, ...]
 ```
 
 Example commands:
