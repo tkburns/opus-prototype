@@ -12,7 +12,13 @@ export type ProgramNodeRM<S extends RS.RecSafe<RS.Map>> = (
   [Declaration, Declaration<RS.RecExtract<S>>]
 );
 
+export type ProgramNodeRMExcluding<Pat, S extends RS.RecSafe<RS.Map>> = (
+  RS.Ex<Pat, Program, [Program, Program<RS.RecExtract<S>>]> |
+  RS.Ex<Pat, Declaration, [Declaration, Declaration<RS.RecExtract<S>>]>
+)
+
 // TODO - add types for Get<> wrappers - eg
+// TODO - autogenerate wrappers ??
 // type ProgramT<RM extends RS.Map = RS.Map> = RS.Get<Program, RM>;
 // can even rename X to XF and make XT be X
 

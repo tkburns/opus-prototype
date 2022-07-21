@@ -1,8 +1,8 @@
 import type * as RS from '&/utils/recursion-scheme';
-import type { ProgramNode, Program, ProgramNodeRM } from './program.types';
-import type { ExpressionNode, ExpressionNodeRM } from './expression.types';
-import type { PatternNode, PatternNodeRM } from './pattern.types';
-import type { BaseNode, BaseNodeRM } from './base.types';
+import type { ProgramNode, Program, ProgramNodeRM, ProgramNodeRMExcluding } from './program.types';
+import type { ExpressionNode, ExpressionNodeRM, ExpressionNodeRMExcluding } from './expression.types';
+import type { PatternNode, PatternNodeRM, PatternNodeRMExcluding } from './pattern.types';
+import type { BaseNode, BaseNodeRM, BaseNodeRMExcluding } from './base.types';
 
 export * from './program.types';
 export * from './pattern.types';
@@ -25,6 +25,12 @@ export type NodeM<RM extends RS.RecSafe<RS.Map> = RS.RecSafe<RS.Map>> =
   BaseNodeRM<RM>;
 
 export type BaseRM = NodeM<[BaseRM]>;
+
+export type NodeMExcluding<Pat, RM extends RS.RecSafe<RS.Map> = RS.RecSafe<RS.Map>> =
+  ProgramNodeRMExcluding<Pat, RM> |
+  ExpressionNodeRMExcluding<Pat, RM> |
+  PatternNodeRMExcluding<Pat, RM> |
+  BaseNodeRMExcluding<Pat, RM>;
 
 
 export type AST = ASTF<BaseRM>;

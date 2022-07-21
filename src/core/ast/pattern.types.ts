@@ -13,6 +13,15 @@ export type PatternNodeRM<S extends RS.RecSafe<RS.Map>> = (
   [WildcardPattern, WildcardPattern<RS.RecExtract<S>>]
 );
 
+export type PatternNodeRMExcluding<Pat, S extends RS.RecSafe<RS.Map>> = (
+  RS.Ex<Pat, NamePattern, [NamePattern, NamePattern<RS.RecExtract<S>>]> |
+
+  RS.Ex<Pat, TuplePattern, [TuplePattern, TuplePattern<RS.RecExtract<S>>]> |
+  RS.Ex<Pat, ParticlePattern, [ParticlePattern, ParticlePattern<RS.RecExtract<S>>]> |
+
+  RS.Ex<Pat, WildcardPattern, [WildcardPattern, WildcardPattern<RS.RecExtract<S>>]>
+);
+
 export type Pattern<RM extends RS.Map = RS.Map> = (
   NamePattern<RM> |
   TuplePattern<RM> |
