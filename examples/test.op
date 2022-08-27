@@ -1,0 +1,10 @@
+foo = "foo";
+f = bar => bar match (
+  (x, x, x) => "same";
+  x => (
+    a = "a";
+    x match (
+      y => y;
+    );
+  );
+);

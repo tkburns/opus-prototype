@@ -1,7 +1,35 @@
 import { mapByType } from '&/utils/nodes';
-// import type * as RS from '&/utils/recursion-scheme';
+import type * as RS from '&/utils/recursion-scheme';
 import * as AST from '../ast';
 // import { BaseNodeRM, ExpressionNodeRM, ProgramNodeRM } from '../ast';
+
+// TODO - look into HKTs & see if that pattern works here...?
+
+
+// TODO - is this the magic method to extend an existing RM...?
+// type Extend<N, R> = N extends unknown
+//   ? [N, R & Extract<AST.NodeF<Extend<N, R>>, N>] | AST.NodeMExcluding<N, [Extend<N, R>]>
+//   : never;
+
+// like Extract, but extends is flipped (still returns T though)
+type Filter<T, U> = T extends unknown
+  ? U extends T
+    ? T
+    : never
+  : never;
+
+// Node of BaseRM -> Node of BaseRM & Ext
+type Combine<N extends AST.NodeF, Ext extends RS.Map> =
+  N extends AST.NodeF<infer RM> // TODO - does this work...?
+    ? AST.Get<Filter<AST.NodeF, N>, RM & Ext>  // TODO - & between RMs here
+    : never;
+
+
+
+// TODO - test with something that's not just BaseRM
+type x = Combine<AST.Program, BindingsRM>;
+
+
 
 // TODO - put this somewhere common ?? remove it ??
 type Meta<T> = { meta: T };
@@ -39,7 +67,7 @@ const append = <T>(set: Set<T>, el: T): Set<T> =>
 // TODO - type checking is REALLY slow with generics
 // might need to tweak Bindings definition (use code generator...?)
 
-const program = <R extends AST.BaseRM>(node: AST.Get<AST.Program, R>): AST.Get<AST.Program, R & BindingsRM> => {
+const program = <N extends AST.Get<AST.Program>>(node: N): AST.Get<AST.Program, BindingsRM> => {
   return {
     ...node,
     entries: block(node.entries, new Set())
