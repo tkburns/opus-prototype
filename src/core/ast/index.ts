@@ -1,13 +1,22 @@
 import type * as RS from '&/utils/recursion-scheme';
-import type { ProgramNode, Program, ProgramNodeRM, ProgramNodeRMExcluding } from './program.types';
-import type { ExpressionNode, ExpressionNodeRM, ExpressionNodeRMExcluding } from './expression.types';
-import type { PatternNode, PatternNodeRM, PatternNodeRMExcluding } from './pattern.types';
-import type { BaseNode, BaseNodeRM, BaseNodeRMExcluding } from './base.types';
+import type { Typed } from '&/utils/nodes';
+import type { ProgramNode, Program } from './program.types';
+import type { ExpressionNode } from './expression.types';
+import type { PatternNode } from './pattern.types';
+import type { BaseNode } from './base.types';
 
 export * from './program.types';
 export * from './pattern.types';
 export * from './expression.types';
 export * from './base.types';
+
+/*
+  legend:
+    _F - the "unbound" node types
+    _RM - the "unbound" map type
+    _M - the "bound" map type
+    _ - the "bound" node types
+*/
 
 export type ASTF<RM extends RS.Map = RS.Map> = Program<RM>;
 export type NodeF<RM extends RS.Map = RS.Map> = (
@@ -17,27 +26,18 @@ export type NodeF<RM extends RS.Map = RS.Map> = (
   BaseNode<RM>
 );
 
-// TODO - rename
-export type NodeM<RM extends RS.RecSafe<RS.Map> = RS.RecSafe<RS.Map>> =
-  ProgramNodeRM<RM> |
-  ExpressionNodeRM<RM> |
-  PatternNodeRM<RM> |
-  BaseNodeRM<RM>;
 
-export type BaseRM = NodeM<[BaseRM]>;
+export type NodeRM<R extends RS.RecSafe<RS.Map> = RS.RecSafe<RS.Map>> = {
+  [T in NodeF['type']]: Extract<NodeF<R[0]>, Typed<T>>;
+}
 
-export type NodeMExcluding<Pat, RM extends RS.RecSafe<RS.Map> = RS.RecSafe<RS.Map>> =
-  ProgramNodeRMExcluding<Pat, RM> |
-  ExpressionNodeRMExcluding<Pat, RM> |
-  PatternNodeRMExcluding<Pat, RM> |
-  BaseNodeRMExcluding<Pat, RM>;
+export type ASTM = NodeRM<[ASTM]>;
 
 
-export type AST = ASTF<BaseRM>;
-export type Node = NodeF<BaseRM>;
+export type AST = ASTF<ASTM>;
+export type Node = NodeF<ASTM>;
 
-export type Get<Pat, RM extends RS.Map = BaseRM> = RS.Get<Pat, RM>;
-
-export type NodeOf<T extends Node['type'], RM extends RS.Map = BaseRM> =
-  Extract<NodeF<RM>, { type: T }>;
+// TODO - rename? NodeOf/NodeOfT?
+export type Get<Pat extends NodeF, RM extends RS.Map = NodeRM> = RS.Get<Pat, RM>;
+export type GetT<Tp extends NodeF['type'], RM extends RS.Map = NodeRM> = RS.GetT<Tp, RM>;
 

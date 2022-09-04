@@ -16,43 +16,6 @@ export type ExpressionNode<RM extends RS.Map = RS.Map> = (
   Literal<RM>
 );
 
-export type ExpressionNodeRM<S extends RS.RecSafe<RS.Map>> = (
-  [BlockExpression, BlockExpression<RS.RecExtract<S>>] |
-
-  [FuncApplication, FuncApplication<RS.RecExtract<S>>] |
-  [ThunkForce, ThunkForce<RS.RecExtract<S>>] |
-
-  [Match, Match<RS.RecExtract<S>>] |
-  [MatchClause, MatchClause<RS.RecExtract<S>>] |
-
-  [Func, Func<RS.RecExtract<S>>] |
-  [Thunk, Thunk<RS.RecExtract<S>>] |
-  [Tuple, Tuple<RS.RecExtract<S>>] |
-  [Atom, Atom<RS.RecExtract<S>>] |
-  [Bool, Bool<RS.RecExtract<S>>] |
-  [Numeral, Numeral<RS.RecExtract<S>>] |
-  [Text, Text<RS.RecExtract<S>>]
-);
-
-export type ExpressionNodeRMExcluding<Pat, S extends RS.RecSafe<RS.Map>> = (
-  RS.Ex<Pat, BlockExpression, [BlockExpression, BlockExpression<RS.RecExtract<S>>]> |
-
-  RS.Ex<Pat, FuncApplication, [FuncApplication, FuncApplication<RS.RecExtract<S>>]> |
-  RS.Ex<Pat, ThunkForce, [ThunkForce, ThunkForce<RS.RecExtract<S>>]> |
-
-  RS.Ex<Pat, Match, [Match, Match<RS.RecExtract<S>>]> |
-  RS.Ex<Pat, MatchClause, [MatchClause, MatchClause<RS.RecExtract<S>>]> |
-
-  RS.Ex<Pat, Func, [Func, Func<RS.RecExtract<S>>]> |
-  RS.Ex<Pat, Thunk, [Thunk, Thunk<RS.RecExtract<S>>]> |
-  RS.Ex<Pat, Tuple, [Tuple, Tuple<RS.RecExtract<S>>]> |
-  RS.Ex<Pat, Atom, [Atom, Atom<RS.RecExtract<S>>]> |
-  RS.Ex<Pat, Bool, [Bool, Bool<RS.RecExtract<S>>]> |
-  RS.Ex<Pat, Numeral, [Numeral, Numeral<RS.RecExtract<S>>]> |
-  RS.Ex<Pat, Text, [Text, Text<RS.RecExtract<S>>]>
-);
-
-
 
 export type Expression<RM extends RS.Map = RS.Map> = (
   BlockExpression<RM> |
