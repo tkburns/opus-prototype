@@ -1,16 +1,19 @@
 import { mapByType } from '&/utils/nodes';
 import type * as RS from '&/utils/recursion-scheme';
 import * as AST from '../ast';
-// import { BaseNodeRM, ExpressionNodeRM, ProgramNodeRM } from '../ast';
+import type { AnnotatedM, Meta } from './meta.types';
 
-// TODO - put this somewhere common ?? remove it ??
-type Meta<T> = { meta: T };
+export type BindingsMeta = {
+  'name-pattern': Meta<{ bound: Set<string> }>
+};
 
 // TODO - use interfaces?
 // TODO add TM<N, R> = { [T in N['type']]: R } util?
-export type BindingsM = AST.NodeRM<[BindingsM]> & {
-  'name-pattern': Meta<{ bound: Set<string> }>
-};
+// export type BindingsM = AST.NodeRM<[BindingsM]> & BindingsMeta;
+
+// util to shorten func signatures below
+type AGet<N extends AST.NodeF, M extends RS.Map> = AST.Get<N, AnnotatedM<M>>;
+type AGetT<Tp extends AST.NodeF['type'], M extends RS.Map> = AST.GetT<Tp, AnnotatedM<M>>;
 
 // ----------------------------------------------------------
   
@@ -41,16 +44,15 @@ const append = <T>(set: Set<T>, el: T): Set<T> =>
 // TODO - type checking is REALLY slow with generics
 // might need to tweak Bindings definition (use code generator...?)
 
-const program = <N extends AST.Get<AST.Program>>(node: N): AST.Get<AST.Program, BindingsM> => {
+const program = <M extends RS.Map>(node: AGet<AST.Program, M>): AGet<AST.Program, M & BindingsMeta> => {
   return {
     ...node,
     entries: block(node.entries, new Set())
-  };
+  } as AGet<AST.Program, M & BindingsMeta>;
 };
 
-
-const block = <R extends AST.ASTM>(nodes: AST.Get<AST.Declaration | AST.Expression, R>[], bindings: Bindings):
-  AST.Get<AST.Declaration | AST.Expression, R & BindingsM>[] =>
+const block = <M extends RS.Map>(nodes: AGet<AST.Declaration | AST.Expression, M>[], bindings: Bindings):
+  AGet<AST.Declaration | AST.Expression, M & BindingsMeta>[] =>
 {
   const [updatedNodes, _] = mapWithState(nodes, bindings, (entry, bindings) =>
     blockEntry(entry, bindings)
@@ -60,26 +62,26 @@ const block = <R extends AST.ASTM>(nodes: AST.Get<AST.Declaration | AST.Expressi
 };
 
 
-const blockEntry = <R extends AST.ASTM>(entry: AST.Get<AST.Declaration | AST.Expression, R>, bindings: Bindings):
-  WithBindings<AST.Get<AST.Declaration | AST.Expression, R & BindingsM>> =>
+const blockEntry = <M extends RS.Map>(entry: AGet<AST.Declaration | AST.Expression, M>, bindings: Bindings):
+  WithBindings<AGet<AST.Declaration | AST.Expression, M & BindingsMeta>> =>
 {
   if (entry.type === 'declaration') {
     return declaration(entry, bindings);
   } else {
-    return [expression(entry, bindings), bindings];
+    return [expression<M>(entry, bindings), bindings];
   }
 };
 
 
 // TODO - attach bindings to declaration node; know if name is shadowing..?
-const declaration = <R extends AST.ASTM>(node: AST.Get<AST.Declaration, R>, bindings: Bindings):
-  WithBindings<AST.Get<AST.Declaration, R & BindingsM>> =>
+const declaration = <M extends RS.Map>(node: AGet<AST.Declaration, M>, bindings: Bindings):
+  WithBindings<AGet<AST.Declaration, M & BindingsMeta>> =>
 {
   const updatedNode = {
     ...node,
     name: name(node.name),
-    expression: expression(node.expression, bindings)
-  };
+    expression: expression<M>(node.expression, bindings)
+  } as AGet<AST.Declaration, M & BindingsMeta>;
 
   const updateBindings = append(bindings, node.name.value);
 
@@ -87,11 +89,11 @@ const declaration = <R extends AST.ASTM>(node: AST.Get<AST.Declaration, R>, bind
 };
 
 
-const expression = <N extends AST.Expression, R extends AST.ASTM>(node: AST.Get<N, R>, bindings: Bindings): AST.Get<N, R & BindingsM> =>
-  translate(node as AST.Get<AST.Expression>, bindings) as AST.Get<N, R & BindingsM>;
+const expression = <M extends RS.Map, N extends AST.Expression = AST.Expression>(node: AGet<N, M>, bindings: Bindings): AGet<N, M & BindingsMeta> =>
+  translate(node as AST.Expression<AnnotatedM<M>>, bindings) as AGet<N, M & BindingsMeta>;
 
 
-const blockExpression = <R extends AST.ASTM>(node: AST.Get<AST.BlockExpression, R>, bindings: Bindings): AST.Get<AST.BlockExpression, R & BindingsM> => {
+const blockExpression = <M extends RS.Map>(node: AGet<AST.BlockExpression, M>, bindings: Bindings): AGet<AST.BlockExpression, M & BindingsMeta> => {
   return {
     ...node,
     entries: block(node.entries, bindings)
@@ -99,14 +101,14 @@ const blockExpression = <R extends AST.ASTM>(node: AST.Get<AST.BlockExpression, 
 };
 
 
-const funcApplication = <R extends AST.ASTM>(node: AST.Get<AST.FuncApplication, R>, bindings: Bindings): AST.Get<AST.FuncApplication, R & BindingsM> =>
+const funcApplication = <M extends RS.Map>(node: AGet<AST.FuncApplication, M>, bindings: Bindings): AGet<AST.FuncApplication, M & BindingsMeta> =>
   ({
     ...node,
     arg: expression(node.arg, bindings),
     func: expression(node.func, bindings),
   });
 
-const thunkForce = <R extends AST.ASTM>(node: AST.Get<AST.ThunkForce, R>, bindings: Bindings): AST.Get<AST.ThunkForce, R & BindingsM> =>
+const thunkForce = <M extends RS.Map>(node: AGet<AST.ThunkForce, M>, bindings: Bindings): AGet<AST.ThunkForce, M & BindingsMeta> =>
   ({
     ...node,
     thunk: expression(node.thunk, bindings)
@@ -114,7 +116,7 @@ const thunkForce = <R extends AST.ASTM>(node: AST.Get<AST.ThunkForce, R>, bindin
 
 
 
-const match = <R extends AST.ASTM>(node: AST.Get<AST.Match, R>, bindings: Bindings): AST.Get<AST.Match, R & BindingsM> => {
+const match = <M extends RS.Map>(node: AGet<AST.Match, M>, bindings: Bindings): AGet<AST.Match, M & BindingsMeta> => {
   const [updatedClauses, _] = mapWithState(node.clauses, bindings, (clause, bindings) => {
     const [updatedPattern, patternBindings] = pattern(clause.pattern, bindings);
     const updatedClause = {
@@ -134,7 +136,7 @@ const match = <R extends AST.ASTM>(node: AST.Get<AST.Match, R>, bindings: Bindin
 };
 
 // TODO - mark if name exists yet
-const namePattern = <R extends AST.ASTM>(node: AST.Get<AST.NamePattern, R>, bindings: Bindings): WithBindings<AST.Get<AST.NamePattern, R & BindingsM>> => {
+const namePattern = <M extends RS.Map>(node: AGet<AST.NamePattern, M>, bindings: Bindings): WithBindings<AGet<AST.NamePattern, M & BindingsMeta>> => {
   const updatedNode = {
     ...node,
     meta: { bound: bindings }
@@ -144,9 +146,9 @@ const namePattern = <R extends AST.ASTM>(node: AST.Get<AST.NamePattern, R>, bind
   return [updatedNode, updatedBindings];
 };
 
-const tuplePattern = <R extends AST.ASTM>(node: AST.Get<AST.TuplePattern, R>, bindings: Bindings): WithBindings<AST.Get<AST.TuplePattern, R & BindingsM>> => {
+const tuplePattern = <M extends RS.Map>(node: AGet<AST.TuplePattern, M>, bindings: Bindings): WithBindings<AGet<AST.TuplePattern, M & BindingsMeta>> => {
   const [updatedMembers, updatedBindings] = mapWithState(node.members, bindings,
-    (member, bindings): [AST.Get<AST.Pattern, R & BindingsM>, Bindings] =>
+    (member, bindings): [AGet<AST.Pattern, M & BindingsMeta>, Bindings] =>
       pattern(member, bindings)
   );
 
@@ -156,13 +158,13 @@ const tuplePattern = <R extends AST.ASTM>(node: AST.Get<AST.TuplePattern, R>, bi
   ];
 };
 
-const particlePattern = <R extends AST.ASTM>(node: AST.Get<AST.ParticlePattern, R>, bindings: Bindings): WithBindings<AST.Get<AST.ParticlePattern, R & BindingsM>> =>
+const particlePattern = <M extends RS.Map>(node: AGet<AST.ParticlePattern, M>, bindings: Bindings): WithBindings<AGet<AST.ParticlePattern, M & BindingsMeta>> =>
   [
     { ...node, value: particle(node.value) },
     bindings
   ];
 
-const wildcardPattern = <R extends AST.ASTM>(node: AST.Get<AST.WildcardPattern, R>, bindings: Bindings): WithBindings<AST.Get<AST.WildcardPattern, R & BindingsM>> =>
+const wildcardPattern = <M extends RS.Map>(node: AGet<AST.WildcardPattern, M>, bindings: Bindings): WithBindings<AGet<AST.WildcardPattern, M & BindingsMeta>> =>
   [node, bindings];
 
 const pattern = mapByType({
@@ -174,34 +176,34 @@ const pattern = mapByType({
 
 
 
-const func = <R extends AST.ASTM>(node: AST.Get<AST.Func, R>, bindings: Bindings): AST.Get<AST.Func, R & BindingsM> =>
+const func = <M extends RS.Map>(node: AGet<AST.Func, M>, bindings: Bindings): AGet<AST.Func, M & BindingsMeta> =>
   ({
     ...node,
     body: expression(node.body, append(bindings, node.arg.value))
   });
 
-const thunk = <R extends AST.ASTM>(node: AST.Get<AST.Thunk, R>, bindings: Bindings): AST.Get<AST.Thunk, R & BindingsM> =>
+const thunk = <M extends RS.Map>(node: AGet<AST.Thunk, M>, bindings: Bindings): AGet<AST.Thunk, M & BindingsMeta> =>
   ({
     ...node,
     body: expression(node.body, bindings)
   });
 
 // TODO - attach bindings to name node; know if name is bound yet ??
-const name = <R extends AST.ASTM>(node: AST.Get<AST.Name, R>): AST.Get<AST.Name, R & BindingsM> => node;
+const name = <M extends RS.Map>(node: AGet<AST.Name, M>): AGet<AST.Name, M & BindingsMeta> => node;
 
-const tuple = <R extends AST.ASTM>(node: AST.Get<AST.Tuple, R>, bindings: Bindings): AST.Get<AST.Tuple, R & BindingsM> =>
+const tuple = <M extends RS.Map>(node: AGet<AST.Tuple, M>, bindings: Bindings): AGet<AST.Tuple, M & BindingsMeta> =>
   ({
     ...node,
     members: node.members.map(n => expression(n, bindings))
   });
 
-const particle = <N extends AST.Particle, R extends AST.ASTM>(node: AST.Get<N, R>): AST.Get<N, R & BindingsM> =>
-  translate(node as AST.Get<AST.Particle>) as AST.Get<N, R & BindingsM>;
+const particle = <N extends AST.Particle, M extends RS.Map>(node: AGet<N, M>): AGet<N, M & BindingsMeta> =>
+  translate(node as AGet<AST.Particle, M>) as AGet<N, M & BindingsMeta>;
 
-const atom = <R extends AST.ASTM>(node: AST.Get<AST.Atom, R>): AST.Get<AST.Atom, R & BindingsM> => node;
-const bool = <R extends AST.ASTM>(node: AST.Get<AST.Bool, R>): AST.Get<AST.Bool, R & BindingsM> => node;
-const number = <R extends AST.ASTM>(node: AST.Get<AST.Numeral, R>): AST.Get<AST.Numeral, R & BindingsM> => node;
-const text = <R extends AST.ASTM>(node: AST.Get<AST.Text, R>): AST.Get<AST.Text, R & BindingsM> => node;
+const atom = <M extends RS.Map>(node: AGet<AST.Atom, M>): AGet<AST.Atom, M & BindingsMeta> => node;
+const bool = <M extends RS.Map>(node: AGet<AST.Bool, M>): AGet<AST.Bool, M & BindingsMeta> => node;
+const number = <M extends RS.Map>(node: AGet<AST.Numeral, M>): AGet<AST.Numeral, M & BindingsMeta> => node;
+const text = <M extends RS.Map>(node: AGet<AST.Text, M>): AGet<AST.Text, M & BindingsMeta> => node;
 
 const translate = mapByType({
   program,
