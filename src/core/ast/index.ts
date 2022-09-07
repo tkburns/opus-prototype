@@ -38,6 +38,6 @@ export type AST = ASTF<ASTM>;
 export type Node = NodeF<ASTM>;
 
 // TODO - rename? NodeOf/NodeOfT?
-export type Get<Pat extends NodeF, RM extends RS.Map = NodeRM> = RS.Get<Pat, RM>;
-export type GetT<Tp extends NodeF['type'], RM extends RS.Map = NodeRM> = RS.GetT<Tp, RM>;
+export type Get<Pat extends NodeF, RM extends RS.Map = ASTM> = RS.Get<Pat, RM>;
+export type GetT<Tp extends NodeF['type'], RM extends RS.Map = ASTM> = RS.GetT<Tp, RM>;
 
